@@ -367,8 +367,109 @@ class Kakuyomu extends TxtMiruSitePlugin {
 TxtMiruSiteManager.AddSite(new Kakuyomu())
 
 class Aozora extends TxtMiruSitePlugin {
+	cache = []
+	IndexUrl = url => url.replace(/\.html\?[0-9]+$/, ".html")
+	GetCacheHtml = url => {
+		for (const item of this.cache) {
+			if (item.url == url) {
+				return item.html
+			}
+		}
+		return null
+	}
+	SetCacheHtml = (url, html) => {
+		if(this.cache.length > 5){
+			this.cache.shift()
+		}
+		this.cache.push({ url: url, html: html })
+	}
 	Match = url => url.match(/https*:\/\/www\.aozora\.gr\.jp/)
+	ParseHtml = (url, index_url, html) => {
+		html = html
+			.replace(/［＃(.*?)］/g, (all, m) => {
+				if (m.match(/底本/)) {
+					return `<sup title='${m}'>※</sup>`
+				} else if (m.match(/、U\+([0-9A-Za-z]+)/)) {
+					return `&#x${RegExp.$1};`
+				}
+				return ""
+			})
+		let doc = TxtMiruLib.HTML2Document(html)
+		if (doc.getElementsByClassName("main_text").length == 0) {
+			doc.body.innerHTML = `<div class="main_text">${doc.body.innerHTML}</div>`
+		}
+		document.title = doc.title
+		TxtMiruLib.KumihanMod(url, doc)
+
+		let item = {
+			className: "Aozora",
+			"next-episode-text": "次へ",
+			"prev-episode-text": "前へ",
+			"episode-index-text": "青空文庫",
+			"episode-index": "https://www.aozora.gr.jp"
+		}
+		const next_episode = doc.getElementById("next-episode")
+		if (next_episode) {
+			next_episode.style.display = "none"
+			item["next-episode"] = next_episode.href
+			item["next-episode-text"] = next_episode.innerText
+		}
+		const prev_episode = doc.getElementById("prev-episode")
+		if (prev_episode) {
+			prev_episode.style.display = "none"
+			item["prev-episode"] = prev_episode.href
+			item["prev-episode-text"] = prev_episode.innerText
+		}
+		if (html.length > 50000) {
+			let target_no = 1
+			if (url.match(/\.html\?([0-9]+)/)) {
+				target_no = parseInt(RegExp.$1)
+			}
+			let subtitle = {}
+			let n = 0
+			for (let main_e of doc.getElementsByClassName("main_text")) {
+				let remove_nodes = []
+				for (let e of main_e.childNodes) {
+					if ((e.className && e.className.match(/jisage/))
+					 && (e.innerHTML && e.innerHTML.match(/naka\-midashi/))) {
+						++n
+						subtitle[n] = e.innerText
+					}
+					if (n > 0 && n < target_no) {
+						remove_nodes.push(e)
+					}
+					if (n > target_no) {
+						remove_nodes.push(e)
+					}
+				}
+				for(let e of remove_nodes){
+					main_e.removeChild(e)
+				}
+				main_e.setAttribute("max-page", n)
+			}
+			if (target_no > 1) {
+				item["prev-episode"] = `${index_url}?${target_no - 1}`
+				item["prev-episode-text"] = subtitle[target_no - 1] || "前へ"
+			}
+			if (target_no < n) {
+				item["next-episode"] = `${index_url}?${target_no + 1}`
+				item["next-episode-text"] = subtitle[target_no + 1] || "次へ"
+			}
+		}
+		let title = ""
+		//
+		item["html"] = title + doc.body.innerHTML
+		doc.innerHTML = ""
+		return item
+	}
 	GetDocument = (txtMiru, url) => {
+		const index_url = this.IndexUrl(url)
+		const html = this.GetCacheHtml(index_url)
+		if (html) {
+			return new Promise(resolve => {
+				setTimeout(() => resolve(this.ParseHtml(url, index_url, html)))
+			})
+		}
 		let charset = "UTF-8"
 		if (url.match(/files/)) {
 			charset = "Shift_JIS"
@@ -380,75 +481,10 @@ class Aozora extends TxtMiruSitePlugin {
 		return fetch(req_url, null)
 			.then(response => response.text())
 			.then(text => {
-				text = text
-					.replace(/［＃(.*?)］/g, (all, m) => {
-						if (m.match(/底本/)) {
-							return `<sup title='${m}'>※</sup>`
-						} else if (m.match(/、U\+([0-9A-Za-z]+)/)) {
-							return `&#x${RegExp.$1};`
-						}
-						console.log(m)
-						return ""
-					})
-				let doc = TxtMiruLib.HTML2Document(text)
-				if (doc.getElementsByClassName("main_text").length == 0) {
-					doc.body.innerHTML = `<div class="main_text">${doc.body.innerHTML}</div>`
-				}
-				document.title = doc.title
-				TxtMiruLib.KumihanMod(url, doc)
-
-				let item = {
-					className: "Aozora",
-					"next-episode-text": "次へ",
-					"prev-episode-text": "前へ",
-					"episode-index-text": "青空文庫",
-					"episode-index": "https://www.aozora.gr.jp"
-				}
-				if (text.length > 500000) {
-					let style = ""
-					let pre_e = null
-					for (let main_e of doc.getElementsByClassName("main_text")) {
-						for (let e of main_e.childNodes) {
-							if (!e.className || !e.className.match(/jisage/) || !e.innerHTML.match(/naka\-midashi/)) {
-								continue
-							}
-							if (pre_e) {
-								let div = doc.createElement("div")
-								div.style = style
-								style = "display:none"
-								let i = pre_e.nextSibling
-								i.parentNode.insertBefore(div, i)
-								while (i && i != e) {
-									let n = i.nextSibling
-									div.appendChild(i)
-									i = n
-								}
-							}
-							pre_e = e
-						}
-					}
-					if (pre_e) {
-						let div = doc.createElement("div")
-						div.style = style
-						style = "display:none"
-						let i = pre_e.nextSibling
-						i.parentNode.insertBefore(div, i)
-						while (i) {
-							let n = i.nextSibling
-							div.appendChild(i)
-							i = n
-						}
-					}
-				}
-				let title = ""
-				//
-				item["html"] = title + doc.body.innerHTML
-				doc.innerHTML = ""
-				return item
+				this.SetCacheHtml(index_url, text)
+				return this.ParseHtml(url, index_url, text)
 			})
-			.catch(err => {
-				return err
-			})
+			.catch(err => err)
 	}
 	GetInfo = async (txtMiru, url, callback = null) => {
 		if (Array.isArray(url)) {
@@ -466,12 +502,15 @@ class Aozora extends TxtMiruSitePlugin {
 			if (callback) {
 				callback([url])
 			}
-			if (url.match(/^(.*\/cards\/.+\/)files\/([0-9]+)/)) {
-				url = `${RegExp.$1}card${RegExp.$2}.html`
+			let target_url = url
+			if (url.match(/\/cards\/[0-9]+\/files\/[0-9_]+.*\.html/)) {
+				target_url = url.replace(/\.html\?[0-9]+?/, ".html")
+			} else if (url.match(/^(.*\/cards\/.+\/)files\/([0-9_]+)/)) {
+				target_url = `${RegExp.$1}card${RegExp.$2}.html`
 			}
 			let req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
-				url: `${url}`,
-				charset: "shift-jis"
+				url: `${target_url}`,
+				charset: "Auto"
 			})}`
 			let html = await fetch(req_url)
 				.then(response => response.text())
@@ -485,6 +524,24 @@ class Aozora extends TxtMiruSitePlugin {
 				name: "",
 				author: ""
 			}
+			let e_title = doc.getElementsByClassName("title")
+			if (e_title.length > 0) {
+				item.name = e_title[0].innerText
+			} else {
+				let h1 = doc.getElementsByTagName("h1")
+				if (h1.length > 0) {
+					item.name = h1[0].innerText
+				}
+			}
+			let e_author = doc.getElementsByClassName("author")
+			if (e_author.length > 0) {
+				item.author = e_author[0].innerText
+			} else {
+				let h2 = doc.getElementsByTagName("h2")
+				if (h2.length > 0) {
+					item.author = h2[0].innerText
+				}
+			}
 			for (let e of doc.getElementsByClassName("header")) {
 				if (e.innerText == "作品名：") {
 					item.name = e.nextElementSibling.innerText
@@ -492,13 +549,27 @@ class Aozora extends TxtMiruSitePlugin {
 					item.author = e.nextElementSibling.innerText
 				}
 			}
+			let n = 0
+			for (let main_e of doc.getElementsByClassName("main_text")) {
+				for (let e of main_e.childNodes) {
+					if ((e.className && e.className.match(/jisage/))
+					 && (e.innerHTML && e.innerHTML.match(/naka\-midashi/))) {
+						++n
+					}
+				}
+				item.max_page = n
+			}
 			return item
 		}
 		return null
 	}
 	GetPageNo = async (txtMiru, url) => {
 		if (this.Match(url)) {
-			return { url: url, page_no: 1, index_url: url }
+			if (url.match(/^(.*\.html)\?([0-9]+)$/)) {
+				return { url: url, page_no: parseInt(RegExp.$2), index_url: RegExp.$1 }
+			} else {
+				return { url: url, page_no: 1, index_url: url }
+			}
 		}
 		return null
 	}

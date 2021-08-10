@@ -28,9 +28,137 @@
     </div>
 </header>
 <main id="TxtMiruMain" class="TxtMiru vertical"></main>
+<style>
+    .TxtMiruTop .novel_title {
+        font-size: 1.2em;
+        padding-top: 0.8em;
+        padding-right: 1.2em;
+        padding-left: 1.2em;
+        font-weight: bold;
+    }
+    
+    .TxtMiruTop .chapter_title {
+        padding-top: 0.8em;
+        padding-right: 1.2em;
+        padding-left: 1.2em;
+        font-weight: bold;
+        background: #eeeee2;
+    }
+    
+    .TxtMiruTop .novel_sublist {
+        border-left: 1px solid #ddddd0;
+    }
+    
+    .TxtMiruTop table {
+        border-collapse: collapse;
+        border-spacing: 0;
+    }
+    
+    .TxtMiruTop table td,
+    .TxtMiruTop table th {
+        border: 1px solid #ddddd0;
+        padding: 6px 13px;
+    }
+</style>
 <div id="TxtMiruTopContents">
-    <p><a target="blank" href="https://syosetu.com">小説家になろう</a></p>
-    <p><a target="blank" href="https://kakuyomu.jp">カクヨム</a></p>
-    <p><a target="blank" href="https://www.aozora.gr.jp">青空文庫</a></p>
-    <p style="width:100vw"></p>
+    <div class="TxtMiruTop">
+        <h1 class="novel_title"><img src="TxtMiru152.png" style="max-width:2em">TxtMiru on the Web</h1>
+        <dl>
+            <dt class="chapter_title">リンク（縦書き対応サイト）</dt>
+            <dd>
+                <div class="novel_sublist"><a target="blank" href="https://syosetu.com">小説家になろう</a></div>
+                <div class="novel_sublist"><a target="blank" href="https://kakuyomu.jp">カクヨム</a></div>
+                <div class="novel_sublist"><a target="blank" href="https://www.aozora.gr.jp">青空文庫</a></div>
+            </dd>
+            <dt class="chapter_title">操作方法</dt>
+            <dd>
+                <div class="novel_sublist">小説の表示</div>
+                <ol>
+                    <li>「<span class="tatechuyoko">≡</span>」ボタンを押下<br>
+                        <img src="image/TxtMiruMenu1.png">
+                    </li>
+                    <li>「<span class="tatechuyoko">URL</span>」ボタンを押下<br>
+                        <img src="image/TxtMiruMenu2.png">
+                    </li>
+                    <li>URLを入力して、「<span class="tatechuyoko">開く</span>」ボタンを押下<br>
+                        <img src="image/TxtMiruUrl.png">
+                    </li>
+                </ol>
+            </dd>
+            <dt class="chapter_title">機能紹介</dt>
+            <dd>
+                <div class="novel_sublist">ショートカット(<span class="tatechuyoko">PC</span>用)</div>
+                <br>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>キー</th>
+                            <th>機能</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="tatechuyoko">F</span>キー</td>
+                            <td>お気に入り</td>
+                        </tr>
+                        <tr>
+                            <td><span class="tatechuyoko">L</span>キー</td>
+                            <td><span class="tatechuyoko">URL</span></td>
+                        </tr>
+                        <tr>
+                            <td><span class="tatechuyoko">C</span>キー</td>
+                            <td>設定</td>
+                        </tr>
+                        <tr>
+                            <td><span class="tatechuyoko">Ctrl</span> + 左矢印</td>
+                            <td>次のエピソード</td>
+                        </tr>
+                        <tr>
+                            <td><span class="tatechuyoko">Ctrl</span> + 右矢印</td>
+                            <td>前のエピソード</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="novel_sublist">お気に入り</div>
+                <ul>
+                    <li>よく見るサイトをお気に入りとして登録できます。 「最新の情報に更新」機能を使用すると小説の総ページ数が最新の物に更新されます。</li>
+                </ul>
+                <div class="novel_sublist">設定</div>
+                <br>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>機能</th>
+                            <th>説明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>テーマ</td>
+                            <td>「ライト」と「ダーク」の２つのテーマから画面表示を選択できます。<br>
+                                <img src="image/TxtMiruTheme.png">
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>フォントサイズ</td>
+                            <td>「大」「中」「小」何れかのサイズの指定ができます。</td>
+                        </tr>
+                        <tr>
+                            <td><span class="tatechuyoko">Web</span>サーバーの<span class="tatechuyoko">URL</span></td>
+                            <td>（オプション）自分でサーバーを設定した場合にはこちらで変更ができます。</td>
+                        </tr>
+                        <tr>
+                            <td>ユーザー<span class="tatechuyoko">ID</span></td>
+                            <td>（オプション）上記、「<span class="tatechuyoko">Web</span>サーバー」を設定した場合にサーバーでお気に入りの保存する際に指定します。</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </dd>
+            <dt class="chapter_title">ソースコード</dt>
+            <dd>
+                GitHub : <a href="https://github.com/gearsns/TxtMiruOnTheWeb">https://github.com/gearsns/TxtMiruOnTheWeb</a>
+            </dd>
+            
+        </dl>
+    </div>
 </div>

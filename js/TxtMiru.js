@@ -604,6 +604,24 @@ export class TxtMiru {
 			} else {
 				this.mainElement.scrollTo(0, 0)
 			}
+			//
+			const observer = new IntersectionObserver((entries) => {
+				for(const e of entries) {
+					if(e.isIntersecting){
+						if(e.target.style.visibility == "hidden"){
+							e.target.style.visibility = "visible"
+						}
+					} else {
+						if(e.target.style.visibility == "visible"){
+							e.target.style.visibility = "hidden"
+						}
+					}
+				}
+			})
+			for(let e of document.getElementsByClassName("auto_hide")){
+				observer.observe(e)
+			}
+			//
 		}).catch(err => {
 			this.setTxtMiruIndexSite()
 		}).finally(() => {

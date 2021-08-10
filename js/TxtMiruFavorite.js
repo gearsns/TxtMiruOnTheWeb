@@ -1,4 +1,4 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js'
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.5'
 import { TxtMiruLoading } from './TxtMiruLoading.js'
 import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js"
 

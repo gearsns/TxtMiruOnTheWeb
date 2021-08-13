@@ -15,7 +15,6 @@ const cumulativeOffset = element => {
 		left += element.offsetLeft || 0
 		element = element.offsetParent
 	} while (element)
-
 	return {
 		top: top,
 		left: left
@@ -25,9 +24,9 @@ const cumulativeOffset = element => {
 const retrieveCharactersRects = elem => {
 	let results = []
 	if (elem.nodeType == elem.TEXT_NODE) {
-		let range = elem.ownerDocument.createRange()
+		const range = elem.ownerDocument.createRange()
 		range.selectNodeContents(elem)
-		for (let current_pos = 0, end_pos = range.endOffse; current_pos + 1 < end_pos; ++current_pos) {
+		for (let current_pos = 0, end_pos = range.endOffset; current_pos + 1 < end_pos; ++current_pos) {
 			range.setStart(elem, current_pos)
 			range.setEnd(elem, current_pos + 1)
 			results.push({
@@ -46,16 +45,16 @@ const retrieveCharactersRects = elem => {
 }
 
 export class TxtMiru {
+	set_scroll_pos_state_timer_id = null
 	scroll_timer_id = null
 	scroll_timer_func = null
-	cur_location = ""
 	scroll_pos = {}
 	site_list = []
 	touchTimer = null
 	touchCount = 0
 	display_popup = false
 	setting = {
-		"WebServerUrl": "https://script.google.com/macros/s/AKfycbytotf75BrlNwTrkRqxW2Bt0TMopbxK4EzE7cp4zXhEsk3vh2NmDZcM_wxyecRFLi1ooQ/exec"
+		"WebServerUrl": "https://script.google.com/macros/s/AKfycbxf6f5omc-p0kTdmyPh92wdpXv9vfQBqa9HJYtypTGD5N5Aqf5S5CWf-yQ6x6sIj4pf3g/exec"
 	}
 
 	constructor(main_id) {
@@ -84,19 +83,17 @@ export class TxtMiru {
 				this.setKeyBind()
 				this.setEvent()
 				//
-				const url = new URL(window.location)
-				this.cur_location = url
-				//
 				this.reflectSetting()
 				//
+				const url = new URL(window.location)
 				this.LoadNovel(url.searchParams.get('url'), url.searchParams.get('scroll_pos'), true)
 			})
 		})
 	}
 	reflectSetting = () => {
-		let el = document.getElementById("TxtMiruMain")
+		const el = document.getElementById("TxtMiruMain")
 		let classNameList = []
-		for (let cn of el.className.split(/ +/)) {
+		for (const cn of el.className.split(/ +/)) {
 			if (!cn.match(/^zoom/)) {
 				classNameList.push(cn)
 			}
@@ -116,7 +113,7 @@ export class TxtMiru {
 	}
 	saveSetting = () => {
 		let item_list = []
-		for (let key of Object.keys(this.setting)) {
+		for (const key of Object.keys(this.setting)) {
 			item_list.push({ id: key, value: this.setting[key] })
 		}
 		return this.txtMiruDB.setSetting(item_list)
@@ -125,10 +122,10 @@ export class TxtMiru {
 	// ページ移動
 	// アニメーションでスクロール
 	scrollToAnim = scroll_last => {
-		let el = this.mainElement
-		let height = scroll_last - el.scrollLeft
+		const el = this.mainElement
+		const height = scroll_last - el.scrollLeft
 		const count = 10
-		let scroll_step = height / count
+		const scroll_step = height / count
 		let index = 0
 		const loop = () => {
 			this.restartScrollTimeout()
@@ -163,8 +160,8 @@ export class TxtMiru {
 		if (this.scroll_timer_id) {
 			clearTimeout(this.scroll_timer_id)
 		}
-		let el = this.mainElement
-		this.scrollToAnim(el.scrollLeft + el.clientWidth + 10)
+		const el = this.mainElement
+		this.scrollToAnim(el.scrollLeft + el.clientWidth)
 		this.scroll_timer_func = this.fixPagePrev
 		this.scroll_timer_id = setTimeout(this.fixPagePrev, 100)
 	}
@@ -172,150 +169,77 @@ export class TxtMiru {
 		if (this.scroll_timer_id) {
 			clearTimeout(this.scroll_timer_id)
 		}
-		let el = this.mainElement
-		this.scrollToAnim(el.scrollLeft - el.clientWidth + 10)
+		const el = this.mainElement
+		this.scrollToAnim(el.scrollLeft - el.clientWidth)
 		this.scroll_timer_func = this.fixPageNext
 		this.scroll_timer_id = setTimeout(this.fixPageNext, 100)
 	}
-	pageTop = () => {
-		this.scrollToAnim(1)
-	}
+	pageTop = () => this.scrollToAnim(1)
 	pageEnd = () => {
-		let el = this.mainElement
+		const el = this.mainElement
 		this.scrollToAnim(-el.scrollWidth)
 	}
 	//
-	gotoNextEpisode = () => {
-		let el = this.contentsElement
-		if (el.hasAttribute("next-episode")) {
-			let url = el.getAttribute("next-episode")
+	gotoAttributeUrl = name => {
+		const el = this.contentsElement
+		if (el.hasAttribute(name)) {
+			const url = el.getAttribute(name)
 			if (url && url.length > 0) {
 				this.LoadNovel(url)
 			}
 		}
 	}
-	gotoPrevEpisode = () => {
-		let el = this.contentsElement
-		if (el.hasAttribute("prev-episode")) {
-			let url = el.getAttribute("prev-episode")
-			if (url && url.length > 0) {
-				this.LoadNovel(url)
-			}
-		}
-	}
-	gotoIndex = () => {
-		let el = this.contentsElement
-		if (el.hasAttribute("episode-index")) {
-			let url = el.getAttribute("episode-index")
-			if (url && url.length > 0) {
-				this.LoadNovel(url)
-			}
-		}
-	}
+	gotoNextEpisode = () => gotoAttributeUrl("next-episode")
+	gotoPrevEpisode = () => gotoAttributeUrl("prev-episode")
+	gotoIndex = () => gotoAttributeUrl("episode-index")
 	//
-	scrollFitRuby = () => {
-		let el = this.mainElement
-		let abl_pos = cumulativeOffset(el)
-		let right = abl_pos.left + el.clientWidth - 1
-		let pos = el.scrollLeft
+	fixPagePrev = () => this.fixPageNext()
+	fixPageNext = () => {
+		this.scroll_timer_id = null
+		const el = this.mainElement
+		const abl_pos = cumulativeOffset(el)
+		const right = abl_pos.left + el.clientWidth - 1
+		const pos = el.scrollLeft
 		const targets = new Set()
 		for (let i = 0; i < el.clientHeight; i += 10) {
-			let t = document.elementsFromPoint(right, abl_pos.top + i)
+			const t = document.elementsFromPoint(right, abl_pos.top + i)
 			if (t.length > 3 && el.contains(t[0])) {
 				targets.add(t[0])
 				break
 			}
 		}
-		let ch_width = 0
-		for (const item of targets) {
-			for (ch of retrieveCharactersRects(item)) {
-				if (ch_width < ch.rect.width) {
-					ch_width = ch.rect.width
-				}
-			}
-		}
-		ch_width *= 0.8
 		let offset = 0
 		for (const item of targets) {
-			for (ch of retrieveCharactersRects(item)) {
-				if (ch.rect.width > ch_width) {
-					continue
-				}
-				if (ch.rect.left < right && right < ch.rect.right) {
-					if (offset < ch.rect.right - right) {
-						offset = ch.rect.right - right - 2
+			for (const ch of retrieveCharactersRects(item)) {
+				const item_right = ch.rect.right + ch.rect.width / 2.3
+				if (ch.rect.left < right && right < item_right) {
+					if (offset < item_right - right) {
+						offset = item_right - right
 					}
 				}
 			}
 		}
 		el.scrollTo(pos + offset, 0)
 	}
-	fixPagePrev = () => {
-		this.scroll_timer_id = null
-		let el = this.mainElement
-		let abl_pos = cumulativeOffset(el)
-		let right = abl_pos.left + el.clientWidth - 1
-		let pos = el.scrollLeft
-		const targets = new Set()
-		for (let i = 0; i < el.clientHeight; i += 10) {
-			let t = document.elementsFromPoint(right, abl_pos.top + i)
-			if (t.length > 3 && el.contains(t[0])) {
-				targets.add(t[0])
-				break
-			}
+	//
+	setScrollPosState = () => {
+		clearTimeout(this.set_scroll_pos_state_timer_id)
+		const cur_url = new URL(window.location)
+		const title = document.title
+		cur_url.searchParams.set('scroll_pos', this.mainElement.scrollLeft / this.mainElement.offsetWidth)
+		const state = {
+			'TxtMiru': true
 		}
-		let offset = 0
-		for (const item of targets) {
-			for (ch of retrieveCharactersRects(item)) {
-				if (ch.rect.left < right && right < ch.rect.right) {
-					if (offset < right - ch.rect.left) {
-						offset = right - ch.rect.left - 2
-					}
-				}
-			}
-		}
-		el.scrollTo(pos - offset, 0)
-		this.scrollFitRuby()
-	}
-	fixPageNext = () => {
-		this.scroll_timer_id = null
-		let el = this.mainElement
-		let abl_pos = cumulativeOffset(el)
-		let right = abl_pos.left + el.clientWidth - 1
-		let pos = el.scrollLeft
-		const targets = new Set()
-		for (let i = 0; i < el.clientHeight; i += 10) {
-			let t = document.elementsFromPoint(right, abl_pos.top + i)
-			if (t.length > 3 && el.contains(t[0])) {
-				targets.add(t[0])
-				break
-			}
-		}
-		let offset = 0
-		for (const item of targets) {
-			for (ch of retrieveCharactersRects(item)) {
-				if (ch.rect.left < right && right < ch.rect.right) {
-					if (offset < ch.rect.right - right) {
-						offset = ch.rect.right - right - 2
-					}
-				}
-			}
-		}
-		el.scrollTo(pos + offset + 5, 0)
-		this.scrollFitRuby()
+		window.history.replaceState(state, title, cur_url)
 	}
 	//
-	inputURL = () => {
-		this.txtMiruInputURL.show(this)
-	}
 	//
-	showFavorite = () => {
-		this.txtMiruFavorite.show(this)
-	}
+	inputURL = () => this.txtMiruInputURL.show(this)
 	//
-	showConfig = () => {
-		this.txtMiruConfig.show(this)
-	}
+	showFavorite = () => this.txtMiruFavorite.show(this)
+	//
+	showConfig = () => this.txtMiruConfig.show(this)
+	//
 	key_mapping = {
 		"Shift+Space": (e) => this.pagePrev(),
 		"Space": (e) => this.pageNext(),
@@ -357,9 +281,15 @@ export class TxtMiru {
 				}
 			}
 		})
+		this.mainElement.addEventListener("scroll", e => {
+			if (this.set_scroll_pos_state_timer_id) {
+				clearTimeout(this.set_scroll_pos_state_timer_id)
+			}
+			this.set_scroll_pos_state_timer_id = setTimeout(this.setScrollPosState, 500)
+		})
 		this.mainElement.addEventListener("wheel", e => {
 			if (!this.display_popup) {
-				let el = this.mainElement
+				const el = this.mainElement
 				if (e.deltaY < 0) {
 					this.scrollToAnim(el.scrollLeft + el.clientWidth * 0.1)
 				} else {
@@ -369,7 +299,7 @@ export class TxtMiru {
 		}, { passive: true })
 		this.mainElement.addEventListener("mousewheel", e => {
 			if (!this.display_popup) {
-				let el = this.mainElement
+				const el = this.mainElement
 				if (e.wheelDelta > 0) {
 					this.scrollToAnim(el.scrollLeft + el.clientWidth * 0.1)
 				} else {
@@ -380,31 +310,14 @@ export class TxtMiru {
 	}
 	///////////////////////////////
 	// イベント
-	UpdateParamScrollPos = () => {
-		let el = this.mainElement
-		const state = {
-			'TxtMiru': true
-		}
-		const title = this.cur_location.searchParams.get('url')
-		document.title = this.cur_location.searchParams.get('url') + " " + (el.scrollLeft / el.offsetWidth)
-		this.cur_location.searchParams.set('scroll_pos', el.scrollLeft / el.offsetWidth)
-		this.scroll_pos[this.cur_location.searchParams.get('url')] = el.scrollLeft / el.offsetWidth
-		history.replaceState(state, title, this.cur_location)
-	}
 	setEvent = () => {
-		window.addEventListener("beforeunload", e => {
-			this.UpdateParamScrollPos()
-		})
 		window.addEventListener("load", e => {
 			const url = new URL(window.location)
-			this.cur_location = url
 			this.LoadNovel(url.searchParams.get('url'), url.searchParams.get('scroll_pos'), true)
 		})
 		window.addEventListener("popstate", e => {
 			const url = new URL(window.location)
-			let el = this.mainElement
-			this.scroll_pos[this.cur_location.searchParams.get('url')] = el.scrollLeft / el.offsetWidth
-			this.LoadNovel(url.searchParams.get('url'), this.scroll_pos[url.searchParams.get('url')], true)
+			this.LoadNovel(url.searchParams.get('url'), url.searchParams.get('scroll_pos'), true)
 		})
 		//
 		this.txtMiruInputURL.setEvent(this)
@@ -414,13 +327,13 @@ export class TxtMiru {
 	//
 	pageInfo = async url => {
 		if (!url) {
-			this.cur_location = new URL(window.location)
-			url = this.cur_location.searchParams.get('url')
+			const cur_url = new URL(window.location)
+			url = cur_url.searchParams.get('url')
 			if (!url) {
 				return
 			}
 		}
-		for (let site of TxtMiruSiteManager.SiteList()) {
+		for (const site of TxtMiruSiteManager.SiteList()) {
 			if (site.Match(url)) {
 				return site.Info(url)
 			}
@@ -428,10 +341,9 @@ export class TxtMiru {
 		return null
 	}
 	setTxtMiruIndexSite = () => {
-		this.cur_location = new URL(window.location)
 		document.getElementById("contents").innerHTML = document.getElementById("TxtMiruTopContents").innerHTML
 		const oldPrevFunc = this.prevFunc
-		for (let el of this.mainElement.getElementsByClassName("prev-episode")) {
+		for (const el of this.mainElement.getElementsByClassName("prev-episode")) {
 			el.innerHTML = `<a href="./index.html">${TxtMiruTitle}</a>`
 			if (oldPrevFunc) {
 				el.removeEventListener("click", oldPrevFunc)
@@ -440,7 +352,7 @@ export class TxtMiru {
 		this.prevFunc = null
 		//
 		const oldNextFunc = this.nextFunc
-		for (let el of this.mainElement.getElementsByClassName("next-episode")) {
+		for (const el of this.mainElement.getElementsByClassName("next-episode")) {
 			el.innerHTML = `<a href="./index.html">${TxtMiruTitle}</a>`
 			if (oldNextFunc) {
 				el.removeEventListener("click", oldNextFunc)
@@ -450,36 +362,38 @@ export class TxtMiru {
 	}
 	//
 	LoadNovel = (url, scroll_pos = 0, no_history = false) => {
+		//
+		const old_url = new URL(window.location)
+		const title = document.title
+		if (!no_history) {
+			old_url.searchParams.set('scroll_pos', this.mainElement.scrollLeft / this.mainElement.offsetWidth)
+			const state = {
+				'TxtMiru': true
+			}
+			history.replaceState(state, title, old_url)
+			history.pushState(state, title, old_url)
+		}
+		//
 		this.contentsElement.setAttribute("prev-episode", "")
 		this.contentsElement.setAttribute("next-episode", "")
 		this.contentsElement.setAttribute("episode-index", "")
 		if (!url) {
 			this.setTxtMiruIndexSite()
 			//
-			url = this.cur_location.searchParams.get('url')
+			old_url.searchParams.get('url')
 			if (!url) {
 				return
 			}
-			scroll_pos = this.cur_location.searchParams.get('scroll_pos')
+			scroll_pos = old_url.searchParams.get('scroll_pos')
 		}
 		//
-		const title = document.title
-		const new_url = new URL(window.location)
-		new_url.searchParams.set('url', url)
-		new_url.searchParams.set('scroll_pos', scroll_pos)
-		if (!no_history) {
-			const state = {
-				'TxtMiru': true
-			}
-			history.pushState(state, title, new_url)
-		}
 		this.txtMiruLoading.begin()
 		this.txtMiruFavorite.setCurrentPage(this, url)
 		TxtMiruSiteManager.GetDocument(this, url).then(item => {
 			if (item == null) {
 				return
 			}
-			for (let key of ["className", "prev-episode", "next-episode", "episode-index", "next-episode-text", "prev-episode-text", "episode-index-text"]) {
+			for (const key of ["className", "prev-episode", "next-episode", "episode-index", "next-episode-text", "prev-episode-text", "episode-index-text"]) {
 				let v = item[key]
 				if (v == null || v == "undefined") {
 					item[key] = ""
@@ -506,9 +420,16 @@ export class TxtMiru {
 				item["episode-index"] = "./index.html"
 				item["episode-index-text"] = TxtMiruTitle
 			}
-			let el = this.mainElement
-			this.cur_location = new_url
-			this.scroll_pos[this.cur_location.searchParams.get('url')] = scroll_pos
+			const el = this.mainElement
+			if (!no_history) {
+				const state = {
+					'TxtMiru': true
+				}
+				const new_url = new URL(window.location)
+				new_url.searchParams.set('url', url)
+				new_url.searchParams.set('scroll_pos', scroll_pos)
+				window.history.replaceState(state, document.title, new_url)
+			}
 			this.contentsElement.className = `contents ${item["className"]}`
 			let html = item.html
 			if (html == "undefined") {
@@ -524,8 +445,8 @@ export class TxtMiru {
 			this.contentsElement.setAttribute("next-episode", item["next-episode"])
 			this.contentsElement.setAttribute("episode-index", item["episode-index"])
 			this.contentsElement.innerHTML = html
-			for (let el_a of this.contentsElement.getElementsByTagName("A")) {
-				let href = el_a.getAttribute("href")
+			for (const el_a of this.contentsElement.getElementsByTagName("A")) {
+				const href = el_a.getAttribute("href")
 				if (href && href.match(/^http/)) {
 					let support = false
 					for (let site of TxtMiruSiteManager.SiteList()) {
@@ -542,25 +463,25 @@ export class TxtMiru {
 						})
 					}
 				} else if (href && href.match(/^#(.*)/)) {
-					let name = RegExp.$1
+					const name = RegExp.$1
 					el_a.addEventListener("click", e => {
 						e.preventDefault()
 						e.stopPropagation()
-						let target_list = document.getElementsByName(name)
+						const target_list = document.getElementsByName(name)
 						if (target_list.length > 0) {
 							this.mainElement.scrollTo(-el.clientWidth + target_list[0].getBoundingClientRect().right, 0)
 						}
 					})
 				}
 			}
-			for (let el of this.mainElement.getElementsByClassName("prev-episode")) {
+			for (const el of this.mainElement.getElementsByClassName("prev-episode")) {
 				if (item["prev-episode"]) {
 					el.innerHTML = `<a href="${item["prev-episode"]}" class="${item["className"]}">${item["prev-episode-text"]}</a>`
 				} else if (item["episode-index"]) {
 					el.innerHTML = `<a href="${item["episode-index"]}" class="${item["className"]}">${item["episode-index-text"]}</a>`
 				}
 			}
-			for (let el of this.mainElement.getElementsByClassName("next-episode")) {
+			for (const el of this.mainElement.getElementsByClassName("next-episode")) {
 				if (item["next-episode"]) {
 					el.innerHTML = `<a href="${item["next-episode"]}" class="${item["className"]}">${item["next-episode-text"]}</a>`
 				} else if (item["episode-index"]) {
@@ -577,7 +498,7 @@ export class TxtMiru {
 					this.LoadNovel(`${item["episode-index"]}`)
 				}
 			}
-			for (let el of this.mainElement.getElementsByClassName("prev-episode")) {
+			for (const el of this.mainElement.getElementsByClassName("prev-episode")) {
 				if (oldPrevFunc) {
 					el.removeEventListener("click", oldPrevFunc)
 				}
@@ -593,7 +514,7 @@ export class TxtMiru {
 					this.LoadNovel(`${item["episode-index"]}`)
 				}
 			}
-			for (let el of this.mainElement.getElementsByClassName("next-episode")) {
+			for (const el of this.mainElement.getElementsByClassName("next-episode")) {
 				if (oldNextFunc) {
 					el.removeEventListener("click", oldNextFunc)
 				}
@@ -604,24 +525,6 @@ export class TxtMiru {
 			} else {
 				this.mainElement.scrollTo(0, 0)
 			}
-			//
-			const observer = new IntersectionObserver((entries) => {
-				for(const e of entries) {
-					if(e.isIntersecting){
-						if(e.target.style.visibility == "hidden"){
-							e.target.style.visibility = "visible"
-						}
-					} else {
-						if(e.target.style.visibility == "visible"){
-							e.target.style.visibility = "hidden"
-						}
-					}
-				}
-			})
-			for(let e of document.getElementsByClassName("auto_hide")){
-				observer.observe(e)
-			}
-			//
 		}).catch(err => {
 			this.setTxtMiruIndexSite()
 		}).finally(() => {

@@ -5,7 +5,7 @@ import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js"
 export class TxtMiruFavorite {
 	constructor(txtMiru) {
 		this.txtMiru = txtMiru
-		this.favorite = txtMiru.txtMiruDB
+		this.txtMiruDB = txtMiru.txtMiruDB
 		this.txtMiruLoading = new TxtMiruLoading()
 		this.favoriteElement = document.createElement("div")
 		this.favoriteElement.className = "hide-favorite"
@@ -51,8 +51,10 @@ export class TxtMiruFavorite {
 	}
 
 	reload = async () => {
+		const e_novel_list = document.getElementById("novel_list") 
+		e_novel_list.style.visibility = "hidden"
 		this.txtMiruLoading.begin()
-		let list = await this.favorite.getFavoriteList()
+		const list = await this.txtMiruDB.getFavoriteList()
 		let tr_list = []
 		let num = 0
 		if (!list || list.length == 0) {
@@ -74,18 +76,19 @@ export class TxtMiruFavorite {
 				tr_list.push(`<tr item_id="${item.id}" url="${item.url}" cur_url="${item.cur_url}"><th>${num}<div class="check"></div><td>${item.cur_page}<td>/<td>${item.max_page}<td class="novel_title">${item.name}<br>${item.author}<td>${site_name}`)
 			}
 		}
+		e_novel_list.style.visibility = "visible"
 		document.getElementById("novel_list_body").innerHTML = tr_list.join("")
 		this.txtMiruLoading.end()
 	}
 
 	setCurrentPage = async (txtMiru, url) => {
-		for (let site of TxtMiruSiteManager.SiteList()) {
+		for (const site of TxtMiruSiteManager.SiteList()) {
 			if (site.Match(url)) {
-				let page = await site.GetPageNo(txtMiru, url)
+				const page = await site.GetPageNo(txtMiru, url)
 				if (page && page.index_url) {
-					let item = await this.favorite.getFavoriteByUrl(page.index_url)
+					const item = await this.txtMiruDB.getFavoriteByUrl(page.index_url)
 					if (item && item.length > 0 && item[0].cur_page < page.page_no) {
-						await this.favorite.setFavorite(item[0].id, { cur_page: page.page_no, cur_url: url })
+						await this.txtMiruDB.setFavorite(item[0].id, { cur_page: page.page_no, cur_url: url })
 					}
 				}
 				break
@@ -109,21 +112,21 @@ export class TxtMiruFavorite {
 		if (url.match(/^n/)) {
 			url = `https://ncode.syosetu.com/${url}`
 		}
-		for (let site of TxtMiruSiteManager.SiteList()) {
+		for (const site of TxtMiruSiteManager.SiteList()) {
 			if (site.Match(url)) {
-				let page = await site.GetPageNo(txtMiru, url)
+				const page = await site.GetPageNo(txtMiru, url)
 				if (page && page.url) {
-					let item = await this.favorite.getFavoriteByUrl(page.index_url)
+					const item = await this.txtMiruDB.getFavoriteByUrl(page.index_url)
 					if (item && item.length > 0) {
 						if (item[0].cur_page < page.page_no) {
-							await this.favorite.setFavorite(item[0].id, { cur_page: page.page_no, cur_url: url })
+							await this.txtMiruDB.setFavorite(item[0].id, { cur_page: page.page_no, cur_url: url })
 						} else {
 							TxtMiruMessageBox.show(`${url}<br>は既に登録されています。`, { "buttons": ["閉じる"] }).then(e => { })
 						}
 					} else {
-						let update_item = await site.GetInfo(txtMiru, page.index_url)
+						const update_item = await site.GetInfo(txtMiru, page.index_url)
 						if (update_item && update_item.name && update_item.name.length > 0) {
-							await this.favorite.addFavorite(update_item.name, update_item.author, page.index_url, page.url, page.page_no, update_item.max_page)
+							await this.txtMiruDB.addFavorite(update_item.name, update_item.author, page.index_url, page.url, page.page_no, update_item.max_page, 0)
 						} else {
 							TxtMiruMessageBox.show(`ページ情報の取得に失敗しました。<br>${url}`, { "buttons": ["閉じる"] }).then(e => { })
 						}
@@ -194,7 +197,7 @@ export class TxtMiruFavorite {
 						let url = url_list[i]
 						for (let item of results) {
 							if (item.url == url) {
-								await this.favorite.setFavorite(tr_list[i].getAttribute("item_id") | 0, item)
+								await this.txtMiruDB.setFavorite(tr_list[i].getAttribute("item_id") | 0, item)
 							}
 						}
 
@@ -262,7 +265,7 @@ export class TxtMiruFavorite {
 					if (e == "delete") {
 						for (let tr of document.getElementById("novel_list_body").getElementsByTagName("TR")) {
 							if (tr.className == "check_on") {
-								await this.favorite.deleteFavorite(tr.getAttribute("item_id") | 0)
+								await this.txtMiruDB.deleteFavorite(tr.getAttribute("item_id") | 0)
 							}
 						}
 						this.reload()

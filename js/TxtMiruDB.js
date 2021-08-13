@@ -17,7 +17,7 @@ export class TxtMiruDB {
 	setSetting = async (item) => {
 		if (Array.isArray(item)) {
 			return await this.db.transaction('rw', this.db.Setting, async () => {
-				for (let i of item) {
+				for (const i of item) {
 					await this.db.Setting.put(i)
 				}
 			})
@@ -26,8 +26,8 @@ export class TxtMiruDB {
 	}
 	addFavorite = async (name, author, url, cur_url, cur_page, max_page) => {
 		if (this.txtMiru.setting["UserID"]) {
-			let server = this.txtMiru.setting["WebServerUrl"]
-			let req_url = `${server}?${new URLSearchParams(
+			const server = this.txtMiru.setting["WebServerUrl"]
+			const req_url = `${server}?${new URLSearchParams(
 				{
 					func: "add_favorite",
 					uid: this.txtMiru.setting["UserID"],
@@ -55,8 +55,8 @@ export class TxtMiruDB {
 	}
 	getFavoriteList = async () => {
 		if (this.txtMiru.setting["UserID"]) {
-			let server = this.txtMiru.setting["WebServerUrl"]
-			let req_url = `${server}?${new URLSearchParams({ func: "get_favorites", uid: this.txtMiru.setting["UserID"], _no_cache_: Date.now().toString() })}`
+			const server = this.txtMiru.setting["WebServerUrl"]
+			const req_url = `${server}?${new URLSearchParams({ func: "get_favorites", uid: this.txtMiru.setting["UserID"], _no_cache_: Date.now().toString() })}`
 			return await fetch(req_url)
 				.then(response => response.json())
 				.then(json => json["values"])
@@ -66,8 +66,8 @@ export class TxtMiruDB {
 	}
 	getFavoriteByUrl = async url => {
 		if (this.txtMiru.setting["UserID"]) {
-			let server = this.txtMiru.setting["WebServerUrl"]
-			let req_url = `${server}?${new URLSearchParams({ func: "get_favorite_by_url", uid: this.txtMiru.setting["UserID"], url: url, _no_cache_: Date.now().toString() })}`
+			const server = this.txtMiru.setting["WebServerUrl"]
+			const req_url = `${server}?${new URLSearchParams({ func: "get_favorite_by_url", uid: this.txtMiru.setting["UserID"], url: url, _no_cache_: Date.now().toString() })}`
 			return await fetch(req_url)
 				.then(response => response.json())
 				.then(json => json["values"])
@@ -82,8 +82,8 @@ export class TxtMiruDB {
 			data.uid = this.txtMiru.setting["UserID"]
 			data.id = id
 			data._no_cache_ = Date.now().toString()
-			let server = this.txtMiru.setting["WebServerUrl"]
-			let req_url = `${server}?${new URLSearchParams(data)}`
+			const server = this.txtMiru.setting["WebServerUrl"]
+			const req_url = `${server}?${new URLSearchParams(data)}`
 			return await fetch(req_url)
 				.then(response => response.json())
 				.then(json => json["result"])
@@ -93,8 +93,8 @@ export class TxtMiruDB {
 	}
 	deleteFavorite = async id => {
 		if (this.txtMiru.setting["UserID"]) {
-			let server = this.txtMiru.setting["WebServerUrl"]
-			let req_url = `${server}?${new URLSearchParams(
+			const server = this.txtMiru.setting["WebServerUrl"]
+			const req_url = `${server}?${new URLSearchParams(
 				{
 					func: "delete_favorite",
 					uid: this.txtMiru.setting["UserID"],

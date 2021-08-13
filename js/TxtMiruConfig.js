@@ -5,7 +5,7 @@ export class TxtMiruConfig {
 		this.configElement.className = "hide-config"
 		this.configElement.innerHTML = `
 <div id="config-box-inner" class="config-box-inner">
-<button id="config-regist">保存</button>
+<button id="config-regist">保存</button><button id="config-rebuild-db" style="display:none">DB再構築</button>
 		<dl>
 		<dt>テーマ
 		<dd class="config-radio-area">
@@ -70,6 +70,20 @@ export class TxtMiruConfig {
 			//
 			txtMiru.setting["WebServerUrl"] = document.getElementById("config-server-url").value
 			txtMiru.setting["UserID"] = document.getElementById("config-user-id").value
+			txtMiru.saveSetting().then(ret => {
+				this.configElement.className = "hide-config"
+				txtMiru.reflectSetting()
+				txtMiru.display_popup = false
+			}).catch(ret => {
+			})
+		})
+		document.getElementById("config-rebuild-db").addEventListener("click", e => {
+			txtMiru.txtMiruDB.db.delete()
+			txtMiru.txtMiruDB.db.version(1).stores({
+				Favorite: "++id,name,author,url,cur_url,cur_page,max_page",
+				Bookmark: "++url,title,postion",
+				Setting: "id,value"
+			})
 			txtMiru.saveSetting().then(ret => {
 				this.configElement.className = "hide-config"
 				txtMiru.reflectSetting()

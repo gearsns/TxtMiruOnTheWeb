@@ -1,5 +1,5 @@
 const split_str = (str, separator) => {
-	var output = [],
+	let output = [],
 		lastLastIndex = 0,
 		match, lastIndex
 	while (match = separator.exec(str)) {
@@ -38,7 +38,7 @@ const convertAbsoluteURL = (base_url, url) => {
 	do {
 		rep = false
 		for (let i = 3; i < arr_url.length; ++i) {
-			let item = arr_url[i]
+			const item = arr_url[i]
 			if (item == ".") {
 				arr_url[i] = null
 				rep = true
@@ -64,76 +64,65 @@ const escape_mark = node => {
 		node.nodeValue = node.nodeValue.replace(/([\.・･]+)/ig,
 			(all, text) => {
 				if (text.length >= 2) {
+					let p = ""
 					if (text.length % 3 == 0) {
-						var p = "";
-						var l = text.length / 3;
-						for (; l > 0; --l) {
-							p += "…";
+						for (let l = text.length / 3; l > 0; --l) {
+							p += "…"
 						}
-						return p;
 					} else if (text.length % 2 == 0) {
-						var p = "";
-						var l = text.length / 2;
-						for (; l > 0; --l) {
-							p += "‥";
+						for (let l = text.length / 2; l > 0; --l) {
+							p += "‥"
 						}
-						return p;
 					} else {
-						var p = "";
-						var l = text.length / 3;
-						for (; l > 0; --l) {
-							p += "…";
+						for (let l = text.length / 3; l > 0; --l) {
+							p += "…"
 						}
-						return p;
 					}
+					return p
 				}
-				return all;
+				return all
 			}
 		).replace(/[─━]/g, "―").replace(/\-+\-/g,
 			all => {
-				var p = "";
-				var l = all.length / 2;
-				for (; l > 0; --l) {
-					p += "―";
+				let p = ""
+				for (let l = all.length / 2; l > 0; --l) {
+					p += "―"
 				}
-				return p;
+				return p
 			}
 		).replace(/[―ー–－−ｰ—\-][―ー–－−ｰ—\-]+/g,
 			all => {
-				var p = "―";
-				var l = 0;
-				var all_list = all.split("");
-				for (var a_index in all_list) {
+				let p = "―"
+				let l = 0
+				const all_list = all.split("");
+				for (const a_index in all_list) {
 					if (all_list[a_index].match(/−ｰ—\-/)) {
-						l += 1;
+						l += 1
 					} else {
-						l += 2;
+						l += 2
 					}
 				}
-				l /= 2;
+				l /= 2
 				for (; l > 0; --l) {
-					p += "―";
+					p += "―"
 				}
-				return p;
+				return p
 			}
 		).replace(/゛/g, "\u3099"
 		).replace(/／＼/g, "\u3033\u3035"
 		).replace(/／″＼/g, "\u3034\u3035"
 		).replace(/゜/g, "\u209A"
 		).replace(/[\.]{3}/g, `…`
-		).replace(/。 *(」|』)/g, (all, p1) => {
-			return p1
-		}).replace(/[ 　]+(」|』)/g, (all, p1) => {
-			return p1
-		}).replace(/\((笑)\)/g, (all, p1) => {
-			return `（${p1}）`
-		})
+		).replace(/。 *(」|』)/g, (all, p1) => p1
+		).replace(/[ 　]+(」|』)/g, (all, p1) => p1
+		).replace(/\((笑)\)/g, (all, p1) => `（${p1}）`
+		)
 	} else if (node.tagName != "RT") {
-		escape_mark_list(node.childNodes);
+		escape_mark_list(node.childNodes)
 	}
 }
 const escape_mark_list = nodes => {
-	for (var i = 0; i < nodes.length; ++i) {
+	for (let i = 0; i < nodes.length; ++i) {
 		escape_mark(nodes[i])
 	}
 }
@@ -159,10 +148,10 @@ const tatechuuyoko_num = node => {
 			return 0
 		}
 		let item_list = []
-		var arr = split_str(node.nodeValue, /([0-9,\.]+)/g)
+		const arr = split_str(node.nodeValue, /([0-9,\.]+)/g)
 		if (arr.length > 0) {
 			let skip_num = 0
-			for (var i = 0; i < arr.length; ++i) {
+			for (let i = 0; i < arr.length; ++i) {
 				if (skip_num > 0) {
 					--skip_num
 					if (arr[i] instanceof Array) {
@@ -172,10 +161,10 @@ const tatechuuyoko_num = node => {
 					}
 				} else if (arr[i] instanceof Array) {
 					// match text
-					var text = arr[i].join("")
+					const text = arr[i].join("")
 					if (text.match(/^[0-9]{4}$/)) {
 						// 西暦の日付は縦中横にしない
-						let text_date = arr.slice(i).join("")
+						const text_date = arr.slice(i).join("")
 						if (text_date.match(/^[0-9]{4}[\/ 年]+[0-9]{1,2}[\/ 月]+[0-9]{1,2}[ 日]+[0-9]{1,2}[\: ]+[0-9]{1,2}/)) {
 							skip_num = 8
 							item_list.push(document.createTextNode(text))
@@ -187,7 +176,7 @@ const tatechuuyoko_num = node => {
 						}
 					}
 					if (text.match(/[0-9]/) && text.length < 4) {
-						var ltr_elm = document.createElement("span")
+						const ltr_elm = document.createElement("span")
 						ltr_elm.className = "tatechuyoko"
 						ltr_elm.appendChild(document.createTextNode(text))
 						item_list.push(ltr_elm)
@@ -201,7 +190,7 @@ const tatechuuyoko_num = node => {
 			}
 		}
 		if (item_list.length > 0) {
-			for (let new_node of item_list) {
+			for (const new_node of item_list) {
 				node.parentNode.insertBefore(new_node, node)
 			}
 			node.parentNode.removeChild(node)
@@ -213,7 +202,7 @@ const tatechuuyoko_num = node => {
 }
 const tatechuuyoko_num_list = (nodes) => {
 	for (let i = 0; i < nodes.length; ++i) {
-		let num = tatechuuyoko_num(nodes[i])
+		const num = tatechuuyoko_num(nodes[i])
 		if (num > 0) {
 			i += num - 1
 		}
@@ -227,32 +216,32 @@ const tatechuuyoko_symbol = node => {
 		}
 		let item_list = []
 		let changed_tatechuyoko = false
-		var arr = split_str(node.nodeValue, /([‼‼︎！？⁈⁇⁉\!\?]+)/g)
+		const arr = split_str(node.nodeValue, /([‼‼︎！？⁈⁇⁉\!\?]+)/g)
 		if (arr.length >= 1) {
-			var novert = false // アルファベットのみの場合は、縦中横にしない
-			for (var i = 0; i < arr.length; ++i) {
+			let novert = false // アルファベットのみの場合は、縦中横にしない
+			for (let i = 0; i < arr.length; ++i) {
 				if (arr[i] instanceof Array) {
 					// match text
-					var text = arr[i].join("")
+					const text = arr[i].join("")
 						.replace(/‼/g, "!!")
 						.replace(/︎︎‼︎/g, "!!")
 						.replace(/！/g, "!")
 						.replace(/？/g, "?")
 						.replace(/⁈/g, "?!")
 						.replace(/⁇/g, "??")
-						.replace(/⁉/g, "!?");
-					var arr2 = [];
+						.replace(/⁉/g, "!?")
+					let arr2 = []
 					if (text.length > 3) {
 						arr2 = text.match(/[\s\S]{1,2}/g) || []
 					} else {
-						arr2 = [text];
+						arr2 = [text]
 					}
 					if (novert) {
 						item_list.push(document.createTextNode(arr2.join("")))
 					} else {
-						for (var j = 0; j < arr2.length; ++j) {
+						for (let j = 0; j < arr2.length; ++j) {
 							changed_tatechuyoko = true
-							var ltr_elm = document.createElement("span")
+							let ltr_elm = document.createElement("span")
 							ltr_elm.className = "tatechuyoko"
 							ltr_elm.appendChild(document.createTextNode(arr2[j]))
 							item_list.push(ltr_elm)
@@ -271,7 +260,7 @@ const tatechuuyoko_symbol = node => {
 		}
 		if (changed_tatechuyoko) {
 			if (item_list.length > 0) {
-				for (let new_node of item_list) {
+				for (const new_node of item_list) {
 					node.parentNode.insertBefore(new_node, node)
 				}
 				node.parentNode.removeChild(node)
@@ -283,13 +272,13 @@ const tatechuuyoko_symbol = node => {
 	tatechuuyoko_symbol_list(node.childNodes)
 }
 const tatechuuyoko_symbol_list = nodes => {
-	for (var i = 0; i < nodes.length; ++i) {
+	for (let i = 0; i < nodes.length; ++i) {
 		tatechuuyoko_symbol(nodes[i])
 	}
 }
 // 縦中横自動設定
 const convert_tatechuuyoko_num = doc => {
-	let nodes = doc.body.childNodes
+	const nodes = doc.body.childNodes
 	tatechuuyoko_num_list(nodes)
 	tatechuuyoko_symbol_list(nodes)
 }
@@ -297,20 +286,20 @@ const convert_tatechuuyoko_num = doc => {
 const yakumono_space = node => {
 	if (node.nodeType == 3) {
 		//let re_yakumono_space = /([（〔「『［【〈《‘“）〕」』』］】〉》’”。．、，]+)/g
-		let re_yakumono_space = /([（〔「『［【〈《）〕」』』］】〉》。．、，]+)/g
+		const re_yakumono_space = /([（〔「『［【〈《）〕」』』］】〉》。．、，]+)/g
 		if (node.parentNode.className == "yakumo_spacing"
 			|| !node.nodeValue.match(re_yakumono_space)) {
 			return
 		}
-		var arr = split_str(node.nodeValue, re_yakumono_space)
+		const arr = split_str(node.nodeValue, re_yakumono_space)
 		if (arr.length > 0) {
 			let item_list = []
-			for (var i = 0; i < arr.length; ++i) {
+			for (let i = 0; i < arr.length; ++i) {
 				if (arr[i] instanceof Array) {
 					// match text
-					var text = arr[i] + ""
+					const text = arr[i] + ""
 					if (text.length >= 2) {
-						var elm_yakumono = document.createElement("span")
+						const elm_yakumono = document.createElement("span")
 						elm_yakumono.className = "yakumono_spacing"
 						elm_yakumono.appendChild(document.createTextNode(text.substr(0, text.length - 1)))
 						item_list.push(elm_yakumono)
@@ -323,7 +312,7 @@ const yakumono_space = node => {
 					item_list.push(document.createTextNode(arr[i]))
 				}
 			}
-			for (let new_node of item_list) {
+			for (const new_node of item_list) {
 				node.parentNode.insertBefore(new_node, node)
 			}
 			node.parentNode.removeChild(node)
@@ -334,38 +323,38 @@ const yakumono_space = node => {
 	yakumono_space_list(node.childNodes)
 }
 const yakumono_space_list = nodes => {
-	for (var i = 0; i < nodes.length; ++i) {
+	for (let i = 0; i < nodes.length; ++i) {
 		yakumono_space(nodes[i])
 	}
 }
 // ruby指定があると行間が空きすぎるのでdata-rubyを設定してinlineにしているが均等割り付けができないのでここで文字間を設定して調整
 const convert_ruby = doc => {
-	for (let item of doc.getElementsByTagName("ruby")) {
-		let rt_list = item.getElementsByTagName("rt") // ルビ文字   かんじ
-		let rb_list = item.getElementsByTagName("rb") // ルビベース 漢字
+	for (const item of doc.getElementsByTagName("ruby")) {
+		const rt_list = item.getElementsByTagName("rt") // ルビ文字   かんじ
+		const rb_list = item.getElementsByTagName("rb") // ルビベース 漢字
 		if (rt_list.length == 1 && rb_list.length == 1) {
 			let styles = {}
 			if (item.style instanceof String) {
-				for (let sl of item.style.split(";")) {
-					let sl_kv = sl.split(":", 2)
+				for (const sl of item.style.split(";")) {
+					const sl_kv = sl.split(":", 2)
 					styles[sl_kv[0]] = sl_kv[1]
 				}
 			}
-			let rt_text = rt_list[0].innerText
+			const rt_text = rt_list[0].innerText
 				.replace(/゛/g, "\u3099"
 				).replace(/／＼/g, "\u3033\u3035"
 				).replace(/／″＼/g, "\u3034\u3035"
 				).replace(/゜/g, "\u209A"
 				)
-			let rb_text = rb_list[0].innerText
+			const rb_text = rb_list[0].innerText
 			item.setAttribute("data-ruby", rt_text)
 
 			// ASCIIのみ
 			if (rt_text.match(/^[A-Za-z0-9 -/:-@\[-~]+$/)) {
 				//・・・・・
 			} else {
-				let rt_height = rt_text.length
-				let rb_height = rb_text.length * 2
+				const rt_height = rt_text.length
+				const rb_height = rb_text.length * 2
 				if (rt_height >= 2 && rt_text.length == rb_text.length) {
 					if (rt_text.match(/^・+$/)) {
 						item.setAttribute("rt-emphasis", "") // サイズを少し小さく 0.5 -> 0.4
@@ -381,19 +370,19 @@ const convert_ruby = doc => {
 					}
 				} else if (rt_height > 2 && rt_height < rb_height) {
 					// ルビ文字がルビベースの高さより小さい時、ルビ文字の文字間隔を広げる
-					let sp = (rb_height - rt_height) / (rt_height)
+					const sp = (rb_height - rt_height) / (rt_height)
 					item.setAttribute("rt-spacing", "")
 					styles["--rt-letter-spacing"] = `${sp}em`
 					styles["--rt-margin-top"] = `${sp / 2}em`
 					styles["--rt-margin-bottom"] = "0em" //`${sp / 2}em`
 				} else if (rt_height == 2 && rt_height < rb_height) {
-					let sp = (rb_height / 2) // -1 = 上下のpadding(0.5em x 2) + rubyの分 1 *2
+					const sp = (rb_height / 2) // -1 = 上下のpadding(0.5em x 2) + rubyの分 1 *2
 					item.setAttribute("rt-spacing", "")
 					styles["--rt-letter-spacing"] = `${sp}em`
 					styles["--rt-margin-top"] = `0em`
 					styles["--rt-margin-bottom"] = `-${sp / 2}em`
 				} else if (rt_height > rb_height) {
-					let sp = (rt_height - rb_height) / (rb_height / 2 + 1) / 2
+					const sp = (rt_height - rb_height) / (rb_height / 2 + 1) / 2
 					styles["letter-spacing"] = `${sp * 2}em`
 					styles["margin-top"] = `${sp}em`
 					styles["margin-bottom"] = `-${sp}em`
@@ -404,7 +393,7 @@ const convert_ruby = doc => {
 				}
 			}
 			let style_list = []
-			for (let key of Object.keys(styles)) {
+			for (const key of Object.keys(styles)) {
 				style_list.push(`${key}:${styles[key]}`)
 			}
 			item.style = style_list.join(";")
@@ -414,15 +403,16 @@ const convert_ruby = doc => {
 // rubyをinline-blockにすると禁則処理が正しく処理されないので、rubyと一緒に行頭・行末禁則文字をspanで囲む
 const counterJapaneseHyphenation = doc => {
 	let nodes = []
-	for (let el of doc.querySelectorAll("[data-ruby]")) {
+	for (const el of doc.querySelectorAll("[data-ruby]")) {
 		nodes.push(el)
 	}
-	for (let el of doc.getElementsByClassName("tatechuyoko")) {
+	for (const el of doc.getElementsByClassName("tatechuyoko")) {
 		nodes.push(el)
 	}
-	for (let el of nodes) {
-		let previousNode = el.previousSibling
-		let nextNode = el.nextSibling
+	for (const el of nodes) {
+		const previousNode = el.previousSibling
+		const nextNode = el.nextSibling
+		let nextMoveNode = null
 		let previousText = ""
 		let nextText = ""
 		if (previousNode && previousNode.nodeType == 3 && previousNode.nodeValue.match(/([\(\[（〔「『［【〈《‘“]+$)/)) {
@@ -432,6 +422,8 @@ const counterJapaneseHyphenation = doc => {
 		if (nextNode && nextNode.nodeType == 3 && nextNode.nodeValue.match(/^([(\)\[）〕」』』］】〉》’”。．、，]+)/)) {
 			nextText = RegExp.$1
 			nextNode.nodeValue = nextNode.nodeValue.replace(/^[(\)\[）〕」』』］】〉》’”。．、，]+/, "")
+		} else if (nextNode && nextNode.nodeType == 1 && nextNode.className == "yakumono_spacing") {
+			nextMoveNode = nextNode
 		}
 		if (previousText.length == 0 && el.className == "tatechuyoko"
 			&& el.innerText.match(/[‼‼︎！？⁈⁇⁉\!\?]/)
@@ -439,8 +431,8 @@ const counterJapaneseHyphenation = doc => {
 			previousText = RegExp.$1
 			previousNode.nodeValue = previousNode.nodeValue.replace(/.$/, "")
 		}
-		if (previousText.length > 0 || nextText.length > 0) {
-			let span = doc.createElement("span")
+		if (previousText.length > 0 || nextText.length > 0 || nextMoveNode) {
+			const span = doc.createElement("span")
 			span.style = "display:inline-block;text-indent:0"
 			el.parentNode.insertBefore(span, el)
 			if (previousText.length > 0) {
@@ -449,21 +441,23 @@ const counterJapaneseHyphenation = doc => {
 			span.appendChild(el)
 			if (nextText.length > 0) {
 				span.appendChild(doc.createTextNode(nextText))
+			} else if (nextMoveNode) {
+				span.appendChild(nextMoveNode)
 			}
 		}
 	}
 }
 const convertElementsURL = (doc, url) => {
-	for (let el_a of doc.getElementsByTagName("A")) {
-		let href = el_a.getAttribute("href")
+	for (const el_a of doc.getElementsByTagName("A")) {
+		const href = el_a.getAttribute("href")
 		if (href && href.match(/javascript:/i)) {
 			el_a.style.display = "none"
 		} else if (href && !href.match(/^http/) && !href.match(/^#/)) {
 			el_a.href = convertAbsoluteURL(url, href)
 		}
 	}
-	for (let el of doc.getElementsByTagName("IMG")) {
-		let src = el.getAttribute("src")
+	for (const el of doc.getElementsByTagName("IMG")) {
+		const src = el.getAttribute("src")
 		if (src && !src.match(/^http/)) {
 			el.src = convertAbsoluteURL(url, src)
 		}
@@ -474,26 +468,26 @@ const convertElementsURL = (doc, url) => {
 }
 export class TxtMiruLib {
 	static KumihanMod = (url, doc) => {
-		let nodes = doc.body.childNodes
+		const nodes = doc.body.childNodes
 		convert_ruby(doc)
 		escape_mark_list(nodes)
 		convert_tatechuuyoko_num(doc)
 		yakumono_space_list(nodes)
 		counterJapaneseHyphenation(doc)
 		convertElementsURL(doc, url)
-		for (let el_p of doc.getElementsByTagName("P")) {
+		for (const el_p of doc.getElementsByTagName("P")) {
 			if (el_p.innerHTML.match(/^[ 　―\-]+$/) && el_p.innerHTML.match(/[―\-]/)) {
 				el_p.innerHTML = "<hr>"
 			}
 		}
-		for (let el_img of doc.getElementsByTagName("IMG")) {
+		for (const el_img of doc.getElementsByTagName("IMG")) {
 			el_img.setAttribute("width", "auto")
 			el_img.setAttribute("height", "auto")
 		}
 	}
 	static ConvertAbsoluteURL = (base_url, url) => convertAbsoluteURL(base_url, url)
 	static HTML2Document = html => {
-		let parser = new DOMParser()
+		const parser = new DOMParser()
 		return parser.parseFromString(html.replace(/\<script[\s\S]*?\<\/script\>/ig, "").replace(/\<noscript[\s\S]*?\<\/noscript\>/ig, ""), "text/html")
 	}
 }

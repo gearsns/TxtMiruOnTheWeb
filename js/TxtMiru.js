@@ -1,9 +1,9 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.5'
-import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0'
-import { TxtMiruInputURL } from './TxtMiruInputURL.js'
-import { TxtMiruLoading } from './TxtMiruLoading.js'
-import { TxtMiruConfig } from './TxtMiruConfig.js'
-import { TxtMiruDB } from './TxtMiruDB.js?1.1'
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.1.0'
+import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.1.0'
+import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.1.0'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.1.0'
+import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.1.0'
+import { TxtMiruDB } from './TxtMiruDB.js?1.0.1.0'
 
 const TxtMiruTitle = "TxtMiru on the Web"
 // DOM
@@ -48,8 +48,6 @@ export class TxtMiru {
 	set_scroll_pos_state_timer_id = null
 	scroll_timer_id = null
 	scroll_timer_func = null
-	scroll_pos = {}
-	site_list = []
 	touchTimer = null
 	touchCount = 0
 	display_popup = false
@@ -69,7 +67,7 @@ export class TxtMiru {
 		}).then(ret => {
 			this.txtMiruDB.getSettingList().then(ret => {
 				if (ret) {
-					for (let item of ret) {
+					for (const item of ret) {
 						this.setting[item.id] = item.value
 					}
 				}
@@ -109,6 +107,9 @@ export class TxtMiru {
 			document.body.className = "dark"
 		} else {
 			document.body.className = ""
+		}
+		if (this.setting["menu-position"] == "bottom") {
+			document.body.className += " bottom_menu"
 		}
 	}
 	saveSetting = () => {
@@ -175,10 +176,7 @@ export class TxtMiru {
 		this.scroll_timer_id = setTimeout(this.fixPageNext, 100)
 	}
 	pageTop = () => this.scrollToAnim(1)
-	pageEnd = () => {
-		const el = this.mainElement
-		this.scrollToAnim(-el.scrollWidth)
-	}
+	pageEnd = () => this.scrollToAnim(-this.mainElement.scrollWidth)
 	//
 	gotoAttributeUrl = name => {
 		const el = this.contentsElement
@@ -189,9 +187,9 @@ export class TxtMiru {
 			}
 		}
 	}
-	gotoNextEpisode = () => gotoAttributeUrl("next-episode")
-	gotoPrevEpisode = () => gotoAttributeUrl("prev-episode")
-	gotoIndex = () => gotoAttributeUrl("episode-index")
+	gotoNextEpisode = () => this.gotoAttributeUrl("next-episode")
+	gotoPrevEpisode = () => this.gotoAttributeUrl("prev-episode")
+	gotoIndex = () => this.gotoAttributeUrl("episode-index")
 	//
 	fixPagePrev = () => this.fixPageNext()
 	fixPageNext = () => {
@@ -232,7 +230,6 @@ export class TxtMiru {
 		}
 		window.history.replaceState(state, title, cur_url)
 	}
-	//
 	//
 	inputURL = () => this.txtMiruInputURL.show(this)
 	//

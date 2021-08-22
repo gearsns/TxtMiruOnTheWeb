@@ -1,5 +1,5 @@
 document.getElementById("btn_show").addEventListener("click", e => {
-	if(document.getElementById("control-button-panel").className == "show-control"){
+	if (document.getElementById("control-button-panel").className == "show-control") {
 		document.getElementById("btn_show").className = "menu-trigger"
 		document.getElementById("control-button-panel").className = "hide-control"
 	} else {
@@ -38,5 +38,6 @@ document.getElementById("btn_next").addEventListener("click", e => {
 document.getElementById("btn_end").addEventListener("click", e => {
 	txtMiru.pageEnd()
 })
-import {TxtMiru} from './TxtMiru.js?1.8'
+
+import { TxtMiru } from './TxtMiru.js?1.0.1.0'
 const txtMiru = new TxtMiru("TxtMiruMain")

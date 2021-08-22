@@ -329,6 +329,18 @@ p {
     z-index: 3;
 }
 
+.bottom_menu .control {
+    top: calc(100% - 5rem)
+}
+
+.bottom_menu #contents {
+    padding-top: 2rem;
+}
+
+.bottom_menu #control-button-panel {
+    top: 0;
+}
+
 .hide-control {
     animation: SlideOut 0.6s;
     visibility: hidden;
@@ -1178,6 +1190,13 @@ button.goto2:hover {
         height: 200%;
         padding-top: 6rem;
         padding-bottom: 1rem;
+    }
+    .bottom_menu .control {
+        top: calc(100% - 4.5rem)
+    }
+
+    .bottom_menu #contents {
+        padding-top: 2rem;
     }
 }
 

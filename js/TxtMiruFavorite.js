@@ -1,6 +1,6 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.5'
-import { TxtMiruLoading } from './TxtMiruLoading.js'
-import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js"
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.1.0'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.1.0'
+import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.1.0"
 
 export class TxtMiruFavorite {
 	constructor(txtMiru) {
@@ -60,10 +60,10 @@ export class TxtMiruFavorite {
 		if (!list || list.length == 0) {
 			tr_list.push(`<tr><td colspan="6" style="width:100vw">お気に入りが登録されていません。</td></tr>`)
 		} else {
-			for (let item of list) {
+			for (const item of list) {
 				++num
 				let site_name = ""
-				for (let site of TxtMiruSiteManager.SiteList()) {
+				for (const site of TxtMiruSiteManager.SiteList()) {
 					if (site.Match(item.url)) {
 						site_name = site.Name()
 						break
@@ -156,30 +156,30 @@ export class TxtMiruFavorite {
 		document.getElementById("favorite-update").addEventListener("click", async e => {
 			this.txtMiruLoading.begin()
 			let url_list = []
-			let tr_list = document.getElementById("novel_list_body").getElementsByTagName("TR")
-			for (let tr of tr_list) {
+			const tr_list = document.getElementById("novel_list_body").getElementsByTagName("TR")
+			for (const tr of tr_list) {
 				if (tr.className == "check_on") {
-					let url = tr.getAttribute("url")
+					const url = tr.getAttribute("url")
 					if (url) {
 						url_list.push(url)
 					}
 				}
 			}
 			if(url_list.length == 0){
-				for (let tr of tr_list) {
-					let url = tr.getAttribute("url")
+				for (const tr of tr_list) {
+					const url = tr.getAttribute("url")
 					if (url) {
 						url_list.push(url)
 					}
 				}
 			}
 			let results = []
-			for (let site of TxtMiruSiteManager.SiteList()) {
+			for (const site of TxtMiruSiteManager.SiteList()) {
 				results = await site.GetInfo(txtMiru, url_list, item_list => {
 					let arr = ["取得中..."]
-					for(let url of item_list){
+					for(const url of item_list){
 						let exists = false
-						for (let tr of tr_list) {
+						for (const tr of tr_list) {
 							if(url == tr.getAttribute("url")){
 								arr.push(tr.getElementsByClassName("novel_title")[0].innerText)
 								exists = true
@@ -194,8 +194,8 @@ export class TxtMiruFavorite {
 				})
 				if (results) {
 					for (let i = 0, c = url_list.length; i < c; ++i) {
-						let url = url_list[i]
-						for (let item of results) {
+						const url = url_list[i]
+						for (const item of results) {
 							if (item.url == url) {
 								await this.txtMiruDB.setFavorite(tr_list[i].getAttribute("item_id") | 0, item)
 							}
@@ -209,7 +209,7 @@ export class TxtMiruFavorite {
 		})
 		// 最初から
 		document.getElementById("favorite-first").addEventListener("click", e => {
-			for (let tr of document.getElementById("novel_list_body").getElementsByTagName("TR")) {
+			for (const tr of document.getElementById("novel_list_body").getElementsByTagName("TR")) {
 				if (tr.className == "check_on") {
 					this.favoriteElement.className = "hide-favorite"
 					txtMiru.display_popup = false
@@ -220,7 +220,7 @@ export class TxtMiruFavorite {
 		})
 		// 続きから
 		document.getElementById("favorite-continue").addEventListener("click", e => {
-			for (let tr of document.getElementById("novel_list_body").getElementsByTagName("TR")) {
+			for (const tr of document.getElementById("novel_list_body").getElementsByTagName("TR")) {
 				if (tr.className == "check_on") {
 					this.favoriteElement.className = "hide-favorite"
 					txtMiru.display_popup = false
@@ -255,7 +255,7 @@ export class TxtMiruFavorite {
 		// 削除
 		document.getElementById("favorite-delete").addEventListener("click", e => {
 			let count = 0
-			for (let tr of document.getElementById("novel_list_body").getElementsByTagName("TR")) {
+			for (const tr of document.getElementById("novel_list_body").getElementsByTagName("TR")) {
 				if (tr.className == "check_on") {
 					++count
 				}
@@ -263,7 +263,7 @@ export class TxtMiruFavorite {
 			if (count > 0) {
 				TxtMiruMessageBox.show("選択されているページをお気に入りから削除します。", { "buttons": [{ text: "削除", className: "seigaiha_blue", value: "delete" }, "削除しない"] }).then(async e => {
 					if (e == "delete") {
-						for (let tr of document.getElementById("novel_list_body").getElementsByTagName("TR")) {
+						for (const tr of document.getElementById("novel_list_body").getElementsByTagName("TR")) {
 							if (tr.className == "check_on") {
 								await this.txtMiruDB.deleteFavorite(tr.getAttribute("item_id") | 0)
 							}

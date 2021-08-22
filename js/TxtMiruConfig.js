@@ -13,6 +13,9 @@ export class TxtMiruConfig {
 		<dt>フォントサイズ
 		<dd class="config-radio-area">
 		<input type="radio" name="config-font-size" id="config-font-size-large"><label for="config-font-size-large">大</label><input type="radio" name="config-font-size" id="config-font-size-middle" checked><label for="config-font-size-middle">中</label><input type="radio" name="config-font-size" id="config-font-size-small"><label for="config-font-size-small">小</label>
+		<dt>メニューの位置
+		<dd class="config-radio-area">
+		<input type="radio" name="config-menu-position" id="config-menu-position-top"><label for="config-menu-position-top">上</label><input type="radio" name="config-menu-position" id="config-menu-position-bottom" checked><label for="config-menu-position-bottom">下</label>
 		<dt>WebサーバーのURL
 		<dd><input id="config-server-url" value="">
 		<dt>ユーザーID
@@ -37,6 +40,11 @@ export class TxtMiruConfig {
 			document.getElementById("config-font-size-large").checked = true
 		} else if(txtMiru.setting["font-size"] == "small"){
 			document.getElementById("config-font-size-small").checked = true
+		}
+		if(txtMiru.setting["menu-position"] == "bottom"){
+			document.getElementById("config-menu-position-bottom").checked = true
+		} else {
+			document.getElementById("config-menu-position-top").checked = true
 		}
 		if(txtMiru.setting["WebServerUrl"]){
 			document.getElementById("config-server-url").value = txtMiru.setting["WebServerUrl"]
@@ -66,6 +74,11 @@ export class TxtMiruConfig {
 				txtMiru.setting["font-size"] = "middle"
 			} else if(document.getElementById("config-font-size-small").checked){
 				txtMiru.setting["font-size"] = "small"
+			}
+			if(document.getElementById("config-menu-position-bottom").checked){
+				txtMiru.setting["menu-position"] = "bottom"
+			} else {
+				txtMiru.setting["menu-position"] = "top"
 			}
 			//
 			txtMiru.setting["WebServerUrl"] = document.getElementById("config-server-url").value

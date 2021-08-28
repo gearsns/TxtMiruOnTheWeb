@@ -14,13 +14,13 @@ export class TxtMiruInputURL {
 		document.body.appendChild(this.urlElement)
 	}
 	show = (txtMiru) => {
-		if(txtMiru.display_popup){
+		if (txtMiru.display_popup) {
 			return
 		}
 		txtMiru.display_popup = true
 		this.urlElement.className = "show-input-url"
 		const url = (new URL(window.location)).searchParams.get('url')
-		if(url == null){
+		if (url == null) {
 			document.getElementById("input-url").value = ""
 		} else {
 			document.getElementById("input-url").value = url
@@ -30,7 +30,7 @@ export class TxtMiruInputURL {
 	}
 	jump = (txtMiru) => {
 		let url = document.getElementById("input-url").value
-		if(url.match(/^n/)){
+		if (url.match(/^n/)) {
 			url = `https://ncode.syosetu.com/${url}`
 		}
 		txtMiru.LoadNovel(url)
@@ -49,12 +49,12 @@ export class TxtMiruInputURL {
 			txtMiru.display_popup = false
 		})
 		document.getElementById("input-url").addEventListener("keydown", e => {
-			if(!this.isComposing){
-				if(e.code == "Enter" || e.code == "NumpadEnter"){
+			if (!this.isComposing) {
+				if (e.code == "Enter" || e.code == "NumpadEnter") {
 					this.jump(txtMiru)
 					e.preventDefault()
 					e.stopPropagation()
-				} else if(e.code == "Escape"){
+				} else if (e.code == "Escape") {
 					this.urlElement.className = "hide-input-url"
 					txtMiru.display_popup = false
 					e.preventDefault()
@@ -62,6 +62,6 @@ export class TxtMiruInputURL {
 				}
 			}
 		})
-		document.getElementById("jump-url").addEventListener("click", e => { this.jump(txtMiru) })
+		document.getElementById("jump-url").addEventListener("click", e => this.jump(txtMiru))
 	}
 }

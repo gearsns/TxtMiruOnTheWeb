@@ -331,7 +331,18 @@ const yakumono_space_list = nodes => {
 const convert_ruby = doc => {
 	for (const item of doc.getElementsByTagName("ruby")) {
 		const rt_list = item.getElementsByTagName("rt") // ルビ文字   かんじ
-		const rb_list = item.getElementsByTagName("rb") // ルビベース 漢字
+		let rb_list = item.getElementsByTagName("rb") // ルビベース 漢字
+		if(rb_list.length == 0){
+			for(const node of item.childNodes){
+				if (node.nodeType == 3) {
+					const e = doc.createElement("rb")
+					e.appendChild(node)
+					item.appendChild(e)
+					rb_list = item.getElementsByTagName("rb")
+					break
+				}
+			}
+		}
 		if (rt_list.length == 1 && rb_list.length == 1) {
 			let styles = {}
 			if (item.style instanceof String) {

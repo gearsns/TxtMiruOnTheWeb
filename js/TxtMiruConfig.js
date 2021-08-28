@@ -15,11 +15,14 @@ export class TxtMiruConfig {
 		<input type="radio" name="config-font-size" id="config-font-size-large"><label for="config-font-size-large">大</label><input type="radio" name="config-font-size" id="config-font-size-middle" checked><label for="config-font-size-middle">中</label><input type="radio" name="config-font-size" id="config-font-size-small"><label for="config-font-size-small">小</label>
 		<dt>メニューの位置
 		<dd class="config-radio-area">
-		<input type="radio" name="config-menu-position" id="config-menu-position-top"><label for="config-menu-position-top">上</label><input type="radio" name="config-menu-position" id="config-menu-position-bottom" checked><label for="config-menu-position-bottom">下</label>
+		<input type="radio" name="config-menu-position" id="config-menu-position-top" checked><label for="config-menu-position-top">上</label><input type="radio" name="config-menu-position" id="config-menu-position-bottom"><label for="config-menu-position-bottom">下</label>
 		<dt>WebサーバーのURL
 		<dd><input id="config-server-url" value="">
 		<dt>ユーザーID
 		<dd><input id="config-user-id" value="">
+		<dt>あなたは18歳以上ですか？
+		<dd class="config-radio-area">
+		<input type="radio" name="config-over18" id="config-over18-no" checked><label for="config-over18-no">NO</label><input type="radio" name="config-over18" id="config-over18-yes"><label for="config-over18-yes">YES</label>
 		</dl>
 </div>`.replace(/[\r\n]/g, "")
 		document.body.appendChild(this.configElement)
@@ -45,6 +48,11 @@ export class TxtMiruConfig {
 			document.getElementById("config-menu-position-bottom").checked = true
 		} else {
 			document.getElementById("config-menu-position-top").checked = true
+		}
+		if(txtMiru.setting["over18"] == "yes"){
+			document.getElementById("config-over18-yes").checked = true
+		} else {
+			document.getElementById("config-over18-no").checked = true
 		}
 		if(txtMiru.setting["WebServerUrl"]){
 			document.getElementById("config-server-url").value = txtMiru.setting["WebServerUrl"]
@@ -79,6 +87,11 @@ export class TxtMiruConfig {
 				txtMiru.setting["menu-position"] = "bottom"
 			} else {
 				txtMiru.setting["menu-position"] = "top"
+			}
+			if(document.getElementById("config-over18-yes").checked){
+				txtMiru.setting["over18"] = "yes"
+			} else {
+				txtMiru.setting["over18"] = "no"
 			}
 			//
 			txtMiru.setting["WebServerUrl"] = document.getElementById("config-server-url").value

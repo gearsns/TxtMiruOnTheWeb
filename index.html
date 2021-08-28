@@ -1,28 +1,33 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
-<meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<link rel="shortcut icon" href="favicon.ico">
-<meta name="google-site-verification" content="taF0RanvvJDhPyVvzaFhvo_xqD-7kBGBEsMT1AjBbgQ" />
-<meta name="viewport" id="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=0, viewport-fit=cover">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="TxtMiru on the Web">
-<link rel="apple-touch-icon" href="TxtMiru152.png">
-<title>TxtMiru on the Web</title>
-<link rel="stylesheet" type="text/css" href="css/TxtMiru.css?1.0.1.0"></link>
-<link rel="stylesheet" type="text/css" href="css/TxtMiruDark.css"></link>
-<script src="js/TxtMiruMain.js?1.0.1.0" type="module" defer></script>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link rel="shortcut icon" href="favicon.ico">
+    <meta name="google-site-verification" content="taF0RanvvJDhPyVvzaFhvo_xqD-7kBGBEsMT1AjBbgQ" />
+    <meta name="viewport" id="viewport" content="width=device-width, height=device-height, initial-scale=1, user-scalable=0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="TxtMiru on the Web">
+    <meta name="description" content="TxtMiru on the Webは、ブラウザ上でネット小説「小説家になろう」、「カクヨム」、「青空文庫」を縦組み表示にして読むことができます。">
+    <link rel="apple-touch-icon" href="TxtMiru152.png">
+    <title>TxtMiru on the Web</title>
+    <link rel="stylesheet" type="text/css" href="css/TxtMiru.css?1.0.2.0"></link>
+    <link rel="stylesheet" type="text/css" href="css/TxtMiruDark.css"></link>
+    <script src="js/TxtMiruMain.js?1.0.2.0" type="module" defer></script>
 </head>
 <!-- Global site tag (gtag.js) - Google Analytics -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-QTMH4CFX5L"></script>
 <script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+    window.dataLayer = window.dataLayer || [];
 
-  gtag('config', 'G-QTMH4CFX5L');
+    function gtag() {
+        dataLayer.push(arguments);
+    }
+    gtag('js', new Date());
+
+    gtag('config', 'G-QTMH4CFX5L');
 </script>
 <header>
     <div class="control">
@@ -35,7 +40,7 @@
             <button id="btn_url" class="goto">URL</button>
             <button id="btn_favorite" class="delete">お気に入り</button>
             <button id="btn_config" class="update">設定</button>
-            <div style="margin-top: 1rem;color:whitesmoke;font-size: 1.5rem;padding:0.5em;"><a style="color: white" href="./index.html">TxtMiru on the Web 1.0.1.0</a></div>
+            <div style="margin-top: 1rem;color:whitesmoke;font-size: 1.5rem;padding:0.5em;"><a style="color: white" href="./index.html">TxtMiru on the Web 1.0.2.0</a></div>
         </div>
     </div>
 </header>
@@ -76,11 +81,59 @@
     <div class="TxtMiruTop">
         <h1 class="novel_title"><img src="TxtMiru152.png" style="max-width:2em">TxtMiru on the Web</h1>
         <dl>
+            <dt class="chapter_title">はじめに</dt>
+            <dd>
+                TxtMiru on the Webは、ブラウザ上でネット小説「小説家になろう」、「カクヨム」、「青空文庫」を縦組み表示にして読むことができます。
+            </dd>
             <dt class="chapter_title">リンク（縦書き対応サイト）</dt>
             <dd>
                 <div class="novel_sublist"><a target="blank" href="https://syosetu.com">小説家になろう</a></div>
                 <div class="novel_sublist"><a target="blank" href="https://kakuyomu.jp">カクヨム</a></div>
+                <div class="novel_sublist"><a target="blank" href="https://www.alphapolis.co.jp">アルファポリス</a></div>
                 <div class="novel_sublist"><a target="blank" href="https://www.aozora.gr.jp">青空文庫</a></div>
+            </dd>
+            <dt class="chapter_title">特徴</dt>
+            <dd>
+                <ul>
+                    <li>
+                        <div class="novel_sublist">お使いのブラウザがそのまま小説ビューアに！<br>アプリのインストールは不要です。</div>
+                    </li>
+                    <li>
+                        <div class="novel_sublist">お気に入り</div>
+                        気に入った小説のリストを作成することができます。<br>
+                        お気に入りに登録することで、現在閲覧中のページの管理と小説の更新状況を一括で取得することができるようになります。<br>
+                        ※お気に入りは、お使いのブラウザに保存されます。
+                        <hr>
+                    </li>
+                    <li>
+                        <div class="novel_sublist">小説の更新状況を一括で取得</div>
+                        お気に入りにある小説の最新話数をまとめて取得することができます。
+                        <hr>
+                    </li>
+                    <li>
+                        <div class="novel_sublist">複数の小説サイトに対応（縦書き対応サイト）</div>
+                        <ul>
+                            <li><a target="blank" href="https://syosetu.com">小説家になろう</a></li>
+                            <li><a target="blank" href="https://kakuyomu.jp">カクヨム</a></li>
+                            <li><a target="blank" href="https://www.alphapolis.co.jp">アルファポリス</a></li>
+                            <li><a target="blank" href="https://www.aozora.gr.jp">青空文庫</a></li>
+                        </ul>
+                        <hr>
+                    </li>
+                    <li>
+                        <div class="novel_sublist">ルビによる行間の広がりを調整</div>
+                        ブラウザによってルビの分、行幅が広がる問題に対応<br>
+                        （参考）お使いのブラウザでの表示
+                        <table>
+                            <tr><td>（調整なし）</td><td>（調整あり）</td></tr>
+                            <tr><td><ruby>吾輩<rt>わがはい</rt></ruby>は猫である。名前はまだ無い。<br> 　どこで生れたかとんと
+                                <ruby>見当<rt>けんとう</rt></ruby>がつかぬ。何でも薄暗いじめじめした所でニャーニャー泣いていた事だけは記憶している。吾輩はここで始めて人間というものを見た。</td>
+                                <td><ruby data-ruby="わがはい">吾輩<rt>わがはい</rt></ruby>は猫である。名前はまだ無い。<br> 　どこで生れたかとんと
+                                    <ruby data-ruby="けんとう">見当<rt>けんとう</rt></ruby>がつかぬ。何でも薄暗いじめじめした所でニャーニャー泣いていた事だけは記憶している。吾輩はここで始めて人間というものを見た。<br></td></tr>
+                        </table>
+                        <hr>
+                    </li>
+                </ul>
             </dd>
             <dt class="chapter_title">操作方法</dt>
             <dd>
@@ -156,12 +209,20 @@
                             <td>「大」「中」「小」何れかのサイズの指定ができます。</td>
                         </tr>
                         <tr>
+                            <td>メニューの位置</td>
+                            <td>「上」「下」でメニューの位置を設定できます。<br> スマホで操作する際には「下」がお勧めです。
+                        </tr>
+                        <tr>
                             <td><span class="tatechuyoko">Web</span>サーバーの<span class="tatechuyoko">URL</span></td>
                             <td>（オプション）自分でサーバーを設定した場合にはこちらで変更ができます。</td>
                         </tr>
                         <tr>
                             <td>ユーザー<span class="tatechuyoko">ID</span></td>
                             <td>（オプション）上記、「<span class="tatechuyoko">Web</span>サーバー」を設定した場合にサーバーでお気に入りの保存する際に指定します。</td>
+                        </tr>
+                        <tr>
+                            <td>年齢認証（あなたは18歳以上ですか？）</td>
+                            <td>（オプション）ノクターンノベルズなどの年齢制限のあるサイトを閲覧する際に必要です。</td>
                         </tr>
                     </tbody>
                 </table>
@@ -170,7 +231,7 @@
             <dd>
                 GitHub : <a href="https://github.com/gearsns/TxtMiruOnTheWeb">https://github.com/gearsns/TxtMiruOnTheWeb</a>
             </dd>
-            
+
         </dl>
     </div>
 </div>

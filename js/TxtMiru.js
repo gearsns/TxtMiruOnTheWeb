@@ -1,9 +1,9 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.1.0'
-import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.1.0'
-import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.1.0'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.1.0'
-import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.1.0'
-import { TxtMiruDB } from './TxtMiruDB.js?1.0.1.0'
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.2.0'
+import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.2.0'
+import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.2.0'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.2.0'
+import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.2.0'
+import { TxtMiruDB } from './TxtMiruDB.js?1.0.2.0'
 
 const TxtMiruTitle = "TxtMiru on the Web"
 // DOM
@@ -175,7 +175,7 @@ export class TxtMiru {
 		this.scroll_timer_func = this.fixPageNext
 		this.scroll_timer_id = setTimeout(this.fixPageNext, 100)
 	}
-	pageTop = () => this.scrollToAnim(1)
+	pageTop = () => this.scrollToAnim(this.mainElement.scrollWidth)
 	pageEnd = () => this.scrollToAnim(-this.mainElement.scrollWidth)
 	//
 	gotoAttributeUrl = name => {
@@ -224,7 +224,7 @@ export class TxtMiru {
 		clearTimeout(this.set_scroll_pos_state_timer_id)
 		const cur_url = new URL(window.location)
 		const title = document.title
-		cur_url.searchParams.set('scroll_pos', this.mainElement.scrollLeft / this.mainElement.offsetWidth)
+		cur_url.searchParams.set('scroll_pos', this.mainElement.scrollLeft / this.mainElement.scrollWidth)
 		const state = {
 			'TxtMiru': true
 		}
@@ -363,7 +363,7 @@ export class TxtMiru {
 		const old_url = new URL(window.location)
 		const title = document.title
 		if (!no_history) {
-			old_url.searchParams.set('scroll_pos', this.mainElement.scrollLeft / this.mainElement.offsetWidth)
+			old_url.searchParams.set('scroll_pos', this.mainElement.scrollLeft / this.mainElement.scrollWidth)
 			const state = {
 				'TxtMiru': true
 			}
@@ -391,7 +391,7 @@ export class TxtMiru {
 				return
 			}
 			for (const key of ["className", "prev-episode", "next-episode", "episode-index", "next-episode-text", "prev-episode-text", "episode-index-text"]) {
-				let v = item[key]
+				const v = item[key]
 				if (v == null || v == "undefined") {
 					item[key] = ""
 				}
@@ -417,7 +417,6 @@ export class TxtMiru {
 				item["episode-index"] = "./index.html"
 				item["episode-index-text"] = TxtMiruTitle
 			}
-			const el = this.mainElement
 			if (!no_history) {
 				const state = {
 					'TxtMiru': true
@@ -518,9 +517,9 @@ export class TxtMiru {
 				el.addEventListener("click", this.nextFunc)
 			}
 			if (scroll_pos) {
-				this.mainElement.scrollTo(el.offsetWidth * scroll_pos, 0)
+				this.mainElement.scrollTo(this.mainElement.scrollWidth * scroll_pos, 0)
 			} else {
-				this.mainElement.scrollTo(0, 0)
+				this.mainElement.scrollTo(this.mainElement.scrollWidth, 0)
 			}
 		}).catch(err => {
 			this.setTxtMiruIndexSite()

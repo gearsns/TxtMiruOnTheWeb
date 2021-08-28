@@ -240,6 +240,17 @@ p {
     hanging-punctuation: force-end;
 }
 
+.TxtMiruTop
+{
+    margin: 0;
+    line-height: 1.8;
+    text-align: justify;
+    text-justify: inter-ideograph;
+    font-feature-settings: "palt";
+    line-break: strict;
+    hanging-punctuation: force-end;
+}
+
 .vertical .tatechuyoko_top {
     display: inline-block;
 }
@@ -1176,6 +1187,64 @@ button.goto2:hover {
     text-decoration: none;
 }
 
+/**/
+
+.Alphapolis .nav,
+.Alphapolis .head,
+.Alphapolis .content-tags,
+.Alphapolis .latest-episode-comments-form
+{
+    display: none;
+}
+
+.Alphapolis #contents,
+.Alphapolis #novelBoby
+{
+    margin: 0;
+    line-height: 1.8;
+    text-align: justify;
+    text-justify: inter-ideograph;
+    font-feature-settings: "palt";
+    line-break: strict;
+    hanging-punctuation: force-end;
+}
+
+.Alphapolis h1.title,
+.Alphapolis h2.title
+{
+    font-size: 1.2em;
+    padding-right: 1.2em;
+    padding-left: 1.2em;
+    font-weight: bold;
+}
+
+.Alphapolis h2.episode-title {
+    font-size: 1.1em;
+    padding-right: 0.8em;
+    padding-left: 0.8em;
+    font-weight: bold;
+}
+
+.Alphapolis .author {
+    font-size: 1.2em;
+    text-align: right;
+    font-weight: bold;
+}
+
+.Alphapolis .episode {
+    border-left: 1px solid #ddddd0;
+}
+
+.Alphapolis .open-date
+{
+    display: block;
+    text-align: right;
+}
+
+.Alphapolis .counter
+{
+    display: none;
+}
 
 /**/
 

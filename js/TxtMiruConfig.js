@@ -18,6 +18,8 @@ export class TxtMiruConfig {
 		<input type="radio" name="config-menu-position" id="config-menu-position-top" checked><label for="config-menu-position-top">上</label><input type="radio" name="config-menu-position" id="config-menu-position-bottom"><label for="config-menu-position-bottom">下</label>
 		<dt>WebサーバーのURL
 		<dd><input id="config-server-url" value="">
+		<dt>WebSocketサーバーのURL
+		<dd><input id="config-websocket-server-url" value="">
 		<dt>ユーザーID
 		<dd><input id="config-user-id" value="">
 		<dt>あなたは18歳以上ですか？
@@ -57,6 +59,9 @@ export class TxtMiruConfig {
 		if(txtMiru.setting["WebServerUrl"]){
 			document.getElementById("config-server-url").value = txtMiru.setting["WebServerUrl"]
 		}
+		if(txtMiru.setting["WebSocketServerUrl"]){
+			document.getElementById("config-websocket-server-url").value = txtMiru.setting["WebSocketServerUrl"]
+		}
 		if(txtMiru.setting["UserID"]){
 			document.getElementById("config-user-id").value = txtMiru.setting["UserID"]
 		}
@@ -95,6 +100,7 @@ export class TxtMiruConfig {
 			}
 			//
 			txtMiru.setting["WebServerUrl"] = document.getElementById("config-server-url").value
+			txtMiru.setting["WebSocketServerUrl"] = document.getElementById("config-websocket-server-url").value
 			txtMiru.setting["UserID"] = document.getElementById("config-user-id").value
 			txtMiru.saveSetting().then(ret => {
 				this.configElement.className = "hide-config"

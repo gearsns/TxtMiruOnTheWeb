@@ -1,9 +1,9 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.2.0'
-import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.2.0'
-import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.2.0'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.2.0'
-import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.2.0'
-import { TxtMiruDB } from './TxtMiruDB.js?1.0.2.0'
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.3.0'
+import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.3.0'
+import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.3.0'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.3.0'
+import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.3.0'
+import { TxtMiruDB } from './TxtMiruDB.js?1.0.3.0'
 
 const TxtMiruTitle = "TxtMiru on the Web"
 // DOM
@@ -51,6 +51,7 @@ export class TxtMiru {
 	touchTimer = null
 	touchCount = 0
 	display_popup = false
+	cache_list = []
 	setting = {
 		"WebServerUrl": "https://script.google.com/macros/s/AKfycbxf6f5omc-p0kTdmyPh92wdpXv9vfQBqa9HJYtypTGD5N5Aqf5S5CWf-yQ6x6sIj4pf3g/exec"
 	}
@@ -111,13 +112,58 @@ export class TxtMiru {
 		if (this.setting["menu-position"] == "bottom") {
 			document.body.className += " bottom_menu"
 		}
+		this.setupWebsock(this.setting["WebSocketServerUrl"])
 	}
+	//
+	txtmiru_websocket = null
+	setupWebsock = url => {
+		try {
+			if(this.txtmiru_websocket){
+				this.txtmiru_websocket.close()
+			}
+			this.txtmiru_websocket = null
+			if(!url || url.length == 0){
+				return
+			}
+			let sock = new WebSocket(url)
+			sock.addEventListener("message", e => {
+				try {
+					let item = JSON.parse(e.data)
+					if(item.url){
+						const url = item.url.replace(/(#.*$)/, "")
+						const name = RegExp.$1
+						item.url = url
+						this.addCache(item)
+						this.LoadNovel(url, name)
+					} else {
+						this.addCache(item)
+					}
+				} catch{}
+			})
+			sock.addEventListener("close", this.txtmiru_websocket = null)
+			this.txtmiru_websocket = sock
+		} catch {
+			this.txtmiru_websocket = null
+		}
+	}
+	//
 	saveSetting = () => {
 		let item_list = []
 		for (const key of Object.keys(this.setting)) {
 			item_list.push({ id: key, value: this.setting[key] })
 		}
 		return this.txtMiruDB.setSetting(item_list)
+	}
+	//
+	getCache = () => this.cache_list
+	addCache = item => {
+		for(let i=0, l = this.cache_list.length; i<l; ++i){
+			if(item.url && this.cache_list[i].url == item.url){
+				this.cache_list[i] = item
+				return
+			}
+		}
+		this.cache_list.push(item)
 	}
 	///////////////////////////////
 	// ページ移動
@@ -196,14 +242,16 @@ export class TxtMiru {
 		this.scroll_timer_id = null
 		const el = this.mainElement
 		const abl_pos = cumulativeOffset(el)
-		const right = abl_pos.left + el.clientWidth - 1
+		const right = abl_pos.left + el.clientWidth
 		const pos = el.scrollLeft
 		const targets = new Set()
-		for (let i = 0; i < el.clientHeight; i += 10) {
-			const t = document.elementsFromPoint(right, abl_pos.top + i)
-			if (t.length > 3 && el.contains(t[0])) {
-				targets.add(t[0])
-				break
+		for (let x = 1; x < 3; x++) {
+			for (let i = 0; i < el.clientHeight; i += 10) {
+				const t = document.elementsFromPoint(right - x, abl_pos.top + i)
+				if (t.length > 3 && el.contains(t[0])) {
+					targets.add(t[0])
+					break
+				}
 			}
 		}
 		let offset = 0
@@ -465,7 +513,7 @@ export class TxtMiru {
 						e.stopPropagation()
 						const target_list = document.getElementsByName(name)
 						if (target_list.length > 0) {
-							this.mainElement.scrollTo(-el.clientWidth + target_list[0].getBoundingClientRect().right, 0)
+							this.mainElement.scrollTo(-this.mainElement.clientWidth + target_list[0].getBoundingClientRect().right, 0)
 						}
 					})
 				}
@@ -516,7 +564,18 @@ export class TxtMiru {
 				}
 				el.addEventListener("click", this.nextFunc)
 			}
-			if (scroll_pos) {
+			if(typeof scroll_pos == "string"){
+				const anchor_name = scroll_pos.replace(/#/, "")
+				const target_list = document.getElementsByName(anchor_name)
+				if (target_list.length > 0) {
+					this.mainElement.scrollTo(-this.mainElement.clientWidth + target_list[0].getBoundingClientRect().right, 0)
+				} else {
+					const target = document.getElementById(anchor_name)
+					if (target) {
+						this.mainElement.scrollTo(-this.mainElement.clientWidth + target.getBoundingClientRect().right, 0)
+					}
+				}
+			} else if (scroll_pos) {
 				this.mainElement.scrollTo(this.mainElement.scrollWidth * scroll_pos, 0)
 			} else {
 				this.mainElement.scrollTo(this.mainElement.scrollWidth, 0)

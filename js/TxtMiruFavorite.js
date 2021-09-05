@@ -1,6 +1,6 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.2.0'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.2.0'
-import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.2.0"
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.3.0'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.3.0'
+import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.3.0"
 
 export class TxtMiruFavorite {
 	constructor(txtMiru) {
@@ -193,11 +193,11 @@ export class TxtMiruFavorite {
 					this.txtMiruLoading.update(arr)
 				})
 				if (results) {
-					for (let i = 0, c = url_list.length; i < c; ++i) {
-						const url = url_list[i]
+					for (const tr of tr_list) {
+						const url = tr.getAttribute("url")
 						for (const item of results) {
 							if (item.url == url) {
-								await this.txtMiruDB.setFavorite(tr_list[i].getAttribute("item_id") | 0, item)
+								await this.txtMiruDB.setFavorite(tr.getAttribute("item_id") | 0, item)
 							}
 						}
 

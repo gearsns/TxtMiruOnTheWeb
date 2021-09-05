@@ -73,8 +73,8 @@ main.zoom_m1 {
     text-size-adjust: 100%;
     font-family: "Noto Serif JP", serif;
     font-display: swap;
-    height: calc(100% - 10vh);
-    padding-top: 5.5vh;
+    height: calc(100% - 8rem);
+    padding-top: 5rem;
     /* 折り返し設定 */
     word-break: normal !important;
     word-wrap: break-word;
@@ -646,14 +646,14 @@ p {
 .show-favorite .favorite-box-inner {
     background-color: rgba(255, 255, 255, 0.8);
     margin: 40px;
-    height: 90%;
+    height: calc(100% - 80px);
 }
 
 .show-favorite div.sticky_table {
     background-color: rgba(255, 255, 255, 1.0);
     margin: 0;
     overflow: scroll;
-    height: 100%;
+    height: calc(100% - 40px);
 }
 
 .show-favorite table.sticky_table {
@@ -785,7 +785,8 @@ p {
 .show-config .config-box-inner {
     background-color: rgba(255, 255, 255, 0.8);
     margin: 40px;
-    height: 90%;
+    height: calc(100% - 80px);
+    overflow: scroll;
     font-size: 1.8rem;
 }
 
@@ -1248,16 +1249,126 @@ button.goto2:hover {
 
 /**/
 
+.Hameln form,
+.Hameln .tweetbtn,
+.Hameln a[href*="#"]
+{
+    display: none;
+}
+
+.Hameln .title
+{
+    font-size: 1.2em;
+    padding-right: 1.2em;
+    padding-left: 1.2em;
+    font-weight: bold;
+    display: block;
+}
+
+.Hameln .author
+{
+    display: block;
+    font-size: 1.2em;
+    text-align: right;
+    font-weight: bold;
+}
+
+/**/
+
+.Akatsuki #contents-inner2 > p,
+.Akatsuki a[href*="#"],
+.Akatsuki a[href*="twitter"]
+{
+    display: none;
+}
+
+.Akatsuki h1,
+.Akatsuki #LookNovel
+{
+    font-size: 1.2em;
+    padding-right: 1.2em;
+    padding-left: 1.2em;
+    font-weight: bold;
+    display: block;
+}
+
+.Akatsuki .body-novel
+{
+    margin: 0;
+    line-height: 1.8;
+    text-align: justify;
+    text-justify: inter-ideograph;
+    font-feature-settings: "palt";
+    line-break: strict;
+    hanging-punctuation: force-end;
+}
+
+.Akatsuki .author
+{
+    display: block;
+    font-size: 1.2em;
+    text-align: right;
+    font-weight: bold;
+}
+
+/**/
+
+.Everystar .pcLayoutSideLeft,
+.Everystar .pcLayoutSideRight,
+.Everystar .footer,
+.Everystar .bodyHeader,
+.Everystar .bodyFooter,
+.Everystar .button,
+.Everystar .promoteBookshelf,
+.Everystar .info,
+.Everystar .meta,
+.Everystar button
+{
+    display: none;
+}
+
+.Everystar .title
+{
+    font-size: 1.2em;
+    padding-right: 1.2em;
+    padding-left: 1.2em;
+    font-weight: bold;
+    display: block;
+}
+
+.Everystar .nickname
+{
+    display: block;
+    font-size: 1.2em;
+    text-align: right;
+    font-weight: bold;
+}
+
+.Everystar .novelOutlines,
+.Everystar .content
+{
+    margin: 0;
+    line-height: 1.8;
+    text-align: justify;
+    text-justify: inter-ideograph;
+    font-feature-settings: "palt";
+    line-break: strict;
+    hanging-punctuation: force-end;
+    white-space: pre-wrap;
+}
+
+/**/
+
 @media screen and (max-height:600px) {
     #contents {
-        height: calc(100% - 7rem);
-        padding-top: 6rem;
+        height: calc(100% - 8rem);
+        padding-top: 5rem;
         padding-bottom: 1rem;
     }
     .prev-episode,
     .next-episode {
         height: 200%;
-        padding-top: 6rem;
+        padding-top: 5rem;
         padding-bottom: 1rem;
     }
     .bottom_menu .control {
@@ -1295,10 +1406,15 @@ button.goto2:hover {
     .show-input-url .url {
         width: 90%;
     }
+    .show-config .config-box-inner {
+        margin-left: 0;
+        margin-right: 0;
+        height: calc(100% - 80px);
+    }
     .show-favorite .favorite-box-inner {
         margin-left: 0;
         margin-right: 0;
-        height: 80%;
+        height: calc(100% - 80px);
     }
 }
 

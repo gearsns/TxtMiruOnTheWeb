@@ -1,9 +1,9 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.3.0'
-import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.3.0'
-import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.3.0'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.3.0'
-import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.3.0'
-import { TxtMiruDB } from './TxtMiruDB.js?1.0.3.0'
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.4.0'
+import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.4.0'
+import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.4.0'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.4.0'
+import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.4.0'
+import { TxtMiruDB } from './TxtMiruDB.js?1.0.4.0'
 
 const TxtMiruTitle = "TxtMiru on the Web"
 // DOM
@@ -134,7 +134,7 @@ export class TxtMiru {
 						const name = RegExp.$1
 						item.url = url
 						this.addCache(item)
-						this.LoadNovel(url, name)
+						this.LoadNovel(url, name, true)
 					} else {
 						this.addCache(item)
 					}
@@ -142,6 +142,9 @@ export class TxtMiru {
 			})
 			sock.addEventListener("close", this.txtmiru_websocket = null)
 			this.txtmiru_websocket = sock
+			sock.addEventListener("open", e => {
+				this.txtmiru_websocket.send(JSON.stringify({reload: true}))
+			})
 		} catch {
 			this.txtmiru_websocket = null
 		}
@@ -567,14 +570,17 @@ export class TxtMiru {
 			if(typeof scroll_pos == "string"){
 				const anchor_name = scroll_pos.replace(/#/, "")
 				const target_list = document.getElementsByName(anchor_name)
+				scroll_pos = this.mainElement.scrollWidth
+				const offset = (anchor_name === "current_line") ? this.mainElement.clientWidth / 2 : 0
 				if (target_list.length > 0) {
-					this.mainElement.scrollTo(-this.mainElement.clientWidth + target_list[0].getBoundingClientRect().right, 0)
+					scroll_pos = -this.mainElement.clientWidth + target_list[0].getBoundingClientRect().right + this.mainElement.scrollLeft + offset
 				} else {
 					const target = document.getElementById(anchor_name)
 					if (target) {
-						this.mainElement.scrollTo(-this.mainElement.clientWidth + target.getBoundingClientRect().right, 0)
+						scroll_pos = -this.mainElement.clientWidth + target.getBoundingClientRect().right + this.mainElement.scrollLeft + offset
 					}
 				}
+				this.mainElement.scrollTo(scroll_pos, 0)
 			} else if (scroll_pos) {
 				this.mainElement.scrollTo(this.mainElement.scrollWidth * scroll_pos, 0)
 			} else {

@@ -401,6 +401,11 @@ const convert_ruby = doc => {
 					styles["--rt-letter-spacing"] = `0em`
 					styles["--rt-margin-top"] = `-${sp}em`
 					styles["--rt-margin-bottom"] = `${sp / 2}em`
+				} else if (rt_height == 1 && rt_text.length == rb_text.length) {
+					if (rt_text.match(/^・+$/)) {
+						item.setAttribute("rt-emphasis", "") // サイズを少し小さく 0.5 -> 0.4
+						item.setAttribute("data-ruby", rt_text.replace(/・/g, "﹅"))
+					}
 				}
 			}
 			let style_list = []

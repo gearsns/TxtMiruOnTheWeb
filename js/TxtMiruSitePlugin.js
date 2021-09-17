@@ -1,4 +1,4 @@
-import { TxtMiruLib } from './TxtMiruLib.js?1.0.3.0'
+import { TxtMiruLib } from './TxtMiruLib.js?1.0.4.0'
 import fetchJsonp from './fetch-jsonp.js'
 
 const appendSlash = text => {
@@ -102,9 +102,12 @@ class TxtMiruCacheSite extends TxtMiruSitePlugin {
 	GetDocument = (txtMiru, url) => {
 		for(const cache of txtMiru.getCache()){
 			if(cache.url == url){
+				let doc = TxtMiruLib.HTML2Document(cache.html)
+				document.title = doc.title
+				TxtMiruLib.KumihanMod(url, doc)
 				let item = {
-					className: "TxtMiruCache",
-					html: cache.html
+					className: "TxtMiruCache Aozora",
+					html: `<div class="main_text">${doc.body.innerHTML}</div>`
 				}
 				return Promise.resolve(item)
 			}

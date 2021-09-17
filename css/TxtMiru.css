@@ -1174,6 +1174,7 @@ button.goto2:hover {
     font-feature-settings: "palt";
     line-break: strict;
     hanging-punctuation: force-end;
+    white-space: pre-wrap;
 }
 
 .Aozora table {
@@ -1186,6 +1187,213 @@ button.goto2:hover {
 
 .Aozora .midashi_anchor {
     text-decoration: none;
+}
+
+.Aozora em {
+    font-style: normal;
+}
+
+.Aozora .sesame_dot {
+    -webkit-text-emphasis: filled sesame;
+    text-emphasis: filled sesame;
+}
+
+.Aozora .white_sesame_dot {
+    -webkit-text-emphasis: open sesame;
+    text-emphasis: open sesame;
+}
+
+.Aozora .black_circle {
+    -webkit-text-emphasis: filled circle;
+    text-emphasis: filled circle;
+}
+
+.Aozora .white_circle {
+    -webkit-text-emphasis: open circle;
+    text-emphasis: open circle;
+}
+
+.Aozora .black_up-pointing_triangle {
+    -webkit-text-emphasis: filled triangle;
+    text-emphasis: filled triangle;
+}
+
+.Aozora .white_up-pointing_triangle {
+    -webkit-text-emphasis: open triangle;
+    text-emphasis: open triangle;
+}
+
+.Aozora .bullseye {
+    -webkit-text-emphasis: open double-circle;
+    text-emphasis: open double-circle;
+}
+
+.Aozora .fisheye {
+    -webkit-text-emphasis: filled double-circle;
+    text-emphasis: filled double-circle;
+}
+
+.Aozora .saltire {
+    -webkit-text-emphasis: '×';
+    text-emphasis: '×';
+}
+
+.Aozora .sesame_dot_after {
+    -webkit-text-emphasis: filled sesame;
+    text-emphasis: filled sesame;
+}
+
+.Aozora .white_sesame_dot_after {
+    -webkit-text-emphasis: open sesame;
+    text-emphasis: open sesame;
+}
+
+.Aozora .black_circle_after {
+    -webkit-text-emphasis: filled circle;
+    text-emphasis: filled circle;
+}
+
+.Aozora .white_circle_after {
+    -webkit-text-emphasis: open circle;
+    text-emphasis: open circle;
+}
+
+.Aozora .black_up-pointing_triangle_after {
+    -webkit-text-emphasis: filled triangle;
+    text-emphasis: filled triangle;
+}
+
+.Aozora .white_up-pointing_triangle_after {
+    -webkit-text-emphasis: open triangle;
+    text-emphasis: open triangle;
+}
+
+.Aozora .bullseye_after {
+    -webkit-text-emphasis: open double-circle;
+    text-emphasis: open double-circle;
+}
+
+.Aozora .fisheye_after {
+    -webkit-text-emphasis: filled double-circle;
+    text-emphasis: filled double-circle;
+}
+
+.Aozora .saltire_after {
+    -webkit-text-emphasis: '×';
+    text-emphasis: '×';
+}
+
+.Aozora .jisage {
+    margin-left: var(--jisage);
+}
+
+.Aozora .burasage {
+    margin-left: var(--burasage);
+    text-indent: var(--burasage-turn);
+}
+
+.Aozora .jizume {
+    width: var(--jizume);
+}
+
+.Aozora .chitsuki {
+    text-align: right;
+    margin-right: var(--chitsuki);
+}
+
+.Aozora .chitsuki-float {
+    text-align: right;
+    margin-right: var(--chitsuki);
+    float: right;
+}
+
+.Aozora .underline_solid {
+    text-decoration: underline;
+}
+
+.Aozora .underline_double {
+    text-decoration: underline;
+    text-decoration-style: double;
+}
+
+.Aozora .underline_dotted {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+}
+
+.Aozora .underline_dashed {
+    text-decoration: underline;
+    text-decoration-style: dashed;
+}
+
+.Aozora .underline_wave {
+    text-decoration: underline;
+    text-decoration-style: wavy;
+}
+
+.Aozora .overline_solid {
+    border-top: solid;
+}
+
+.Aozora .overline_double {
+    border-top: double;
+}
+
+.Aozora .overline_dotted {
+    border-top: dotted;
+}
+
+.Aozora .overline_dashed {
+    border-top: dashed;
+}
+
+.Aozora .overline_wave {
+    padding-top: 3px;
+    background-image: linear-gradient(135deg, transparent 35%, black 50%, transparent 65%), linear-gradient(225deg, transparent 35%, black 50%, transparent 65%);
+    background-size: 10px 5px;
+    background-position: 0px 0%, 5px 0%;
+    background-repeat: repeat-x;
+}
+
+.Aozora .futoji {
+    font-weight: bold;
+}
+
+.Aozora .shatai {
+    font-style: italic;
+    font-family: Times New Roman, "ＭＳ Ｐゴシック";
+}
+
+.Aozora ruby.ruby-under {
+    ruby-position: under;
+}
+
+.Aozora .keigakomi {
+    border: 1px solid #000;
+}
+
+.Aozora .dai1 {
+    font-size: large;
+}
+
+.Aozora .dai2 {
+    font-size:  x-large;
+}
+
+.Aozora .dai3, .Aozora .dai4, .Aozora .dai5 {
+    font-size:  xx-large;
+}
+
+.Aozora .sho1 {
+    font-size: small;
+}
+
+.Aozora .sho2 {
+    font-size: x-small;
+}
+
+.Aozora .sho3, .Aozora .sho4, .Aozora .sho5 {
+    font-size: xx-small;
 }
 
 /**/
@@ -1355,6 +1563,28 @@ button.goto2:hover {
     line-break: strict;
     hanging-punctuation: force-end;
     white-space: pre-wrap;
+}
+
+/**/
+
+.TxtMiruCache p 
+{
+    white-space: pre-wrap;
+    min-width: 1.7em;
+}
+
+.TxtMiruCache p.current_line,
+.TxtMiruCache span.current_line
+{
+    border-top: 2px solid #18b7cd;
+    margin-top:  -10px;
+    padding-top: 8px;
+    display: block;
+    overflow-wrap: anywhere;
+}
+
+.TxtMiruCache em {
+    font-style: normal;
 }
 
 /**/

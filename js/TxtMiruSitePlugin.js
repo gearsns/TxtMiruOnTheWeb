@@ -1,4 +1,4 @@
-import { TxtMiruLib } from './TxtMiruLib.js?1.0.4.0'
+import { TxtMiruLib } from './TxtMiruLib.js?1.0.5.0'
 import fetchJsonp from './fetch-jsonp.js'
 
 const appendSlash = text => {
@@ -100,8 +100,8 @@ TxtMiruSiteManager.AddSite(new LocalSite())
 class TxtMiruCacheSite extends TxtMiruSitePlugin {
 	Match = url => url.match(/^TxtMiru:/)
 	GetDocument = (txtMiru, url) => {
-		for(const cache of txtMiru.getCache()){
-			if(cache.url == url){
+		for (const cache of txtMiru.getCache()) {
+			if (cache.url == url) {
 				let doc = TxtMiruLib.HTML2Document(cache.html)
 				document.title = doc.title
 				TxtMiruLib.KumihanMod(url, doc)
@@ -112,7 +112,7 @@ class TxtMiruCacheSite extends TxtMiruSitePlugin {
 				return Promise.resolve(item)
 			}
 		}
-		return Promise.resolve({html: "Not found"})
+		return Promise.resolve({ html: "Not found" })
 	}
 	GetInfo = (txtMiru, url, callback = null) => false
 	GetPageNo = (txtMiru, url) => { }
@@ -1146,6 +1146,21 @@ class Akatsuki extends TxtMiruSitePlugin {
 TxtMiruSiteManager.AddSite(new Akatsuki())
 
 class Everystar extends TxtMiruSitePlugin {
+	cache = []
+	GetCacheHtml = url => {
+		for (const item of this.cache) {
+			if (item.url == url) {
+				return item.html
+			}
+		}
+		return null
+	}
+	SetCacheHtml = (url, html) => {
+		if (this.cache.length > 5) {
+			this.cache.shift()
+		}
+		this.cache.push({ url: url, html: html })
+	}
 	Match = url => url.match(/https:\/\/estar\.jp/)
 	getIndexes = async (txtMiru, id) => {
 		let indexes = []
@@ -1248,8 +1263,9 @@ class Everystar extends TxtMiruSitePlugin {
 						}
 					}
 					for (const i of indexes) {
-						index += `<a href="${TxtMiruLib.ConvertAbsoluteURL(dummy_url, i["href"])}">${i["name"].replace("\n", "").replace(/ +$/, "")}</a>`
+						index += `<div class="novel-toc-episode"><a href="${TxtMiruLib.ConvertAbsoluteURL(dummy_url, i["href"])}">${i["name"].replace("\n", "").replace(/ +$/, "")}</a></div>`
 					}
+					document.title = title
 					item["html"] = `<div class="title">${title}</div><div class="nickname">${author}</div><div>${copy}</div><h3>あらすじ</h3><div class="content">${description}</div><h3>目次</h3><div class="content">${index}</div>`
 				} else {
 					for (const e of doc.getElementsByTagName("DIV")) {
@@ -1257,9 +1273,25 @@ class Everystar extends TxtMiruSitePlugin {
 							e.style = ""
 						}
 					}
+					let title_author = ""
 					let cur_page = 0
 					if (url.match(/page=([0-9]+)/)) {
 						cur_page = parseInt(RegExp.$1)
+						let index_url = ""
+						url = appendSlash(url)
+						if (url.match(/(https:\/\/estar\.jp\/novels\/[0-9]+)/)) {
+							index_url = RegExp.$1
+							title_author = this.GetCacheHtml(index_url)
+							if (!title_author) {
+								const item = await this.GetInfo(txtMiru, url)
+								title_author = `<div class="title"><a href='${index_url}'>${item.name}</a></div><div class="nickname">${item.author}</div>`
+								if (title_author) {
+									this.SetCacheHtml(index_url, title_author)
+								} else {
+									title_author = ""
+								}
+							}
+						}
 					}
 					let max_page = cur_page
 					for (const el of doc.getElementsByClassName("pageNumber")) {
@@ -1297,7 +1329,7 @@ class Everystar extends TxtMiruSitePlugin {
 							e.parentNode.removeChild(e)
 						}
 					}
-					item["html"] = doc.body.innerHTML
+					item["html"] = `${title_author}<br>${cur_page}/${max_page}<br><br>${doc.body.innerHTML}`
 				}
 				return item
 			})
@@ -1408,28 +1440,67 @@ class Magnet extends TxtMiruSitePlugin {
 			const section_id = RegExp.$2
 			const novel_section = await this.novelAPI("https://www.magnet-novels.com/api/web/v2/reader/getNovelSection", `novel_id=${novel_id}&section_id=${section_id}`)
 			const novel_info = await this.novelAPI("https://www.magnet-novels.com/api/novel/reader/getNovelInfo", `novel_id=${novel_id}`)
-			if (novel_section.data.pre_section_id != 0) {
-				item["prev-episode"] = `https://www.magnet-novels.com/novels/${novel_id}/episodes/${novel_section.data.pre_section_id}`
-				item["prev-episode-text"] = "前へ"
+			const novel_contents = await this.novelAPI("https://www.magnet-novels.com/api/web/v2/reader/getNovelContents", `novel_id=${novel_id}`)
+			let prev_episode = null
+			let next_episode = null
+			let sub_title = null
+			const contents_data = novel_contents.data
+			for (let i = 0; i < contents_data.length; ++i) {
+				const data = contents_data[i]
+				if (data.type == 0) {
+					if (data.id == section_id) {
+						if (i < contents_data.length - 1) {
+							next_episode = contents_data[i + 1]
+						}
+						break
+					}
+					prev_episode = data
+				} else {
+					sub_title = data
+				}
 			}
-			if (novel_section.data.next_section_id != 0) {
-				item["next-episode"] = `https://www.magnet-novels.com/novels/${novel_id}/episodes/${novel_section.data.next_section_id}`
-				item["next-episode-text"] = "次へ"
+			item["episode-index-text"] = "目次"
+			item["episode-index"] = `https://www.magnet-novels.com/novels/${novel_id}`
+			if (prev_episode) {
+				item["prev-episode"] = `https://www.magnet-novels.com/novels/${novel_id}/episodes/${prev_episode.id}`
+				item["prev-episode-text"] = `前へ ${prev_episode.title}`
 			}
-			item["html"] = `<div class="title">${novel_info.data.name}</div><div class="author">${novel_info.data.author.name}</div><div class="subtitle">${novel_section.data.title}</div><div class="main">${novel_section.data.content_html}</div>`
+			if (next_episode) {
+				item["next-episode"] = `https://www.magnet-novels.com/novels/${novel_id}/episodes/${next_episode.id}`
+				item["next-episode-text"] = `次へ ${next_episode.title}`
+			}
+			document.title = novel_info.data.name
+			item["html"] = `<div class="title"><a href="https://www.magnet-novels.com/novels/${novel_id}">${novel_info.data.name}</a></div><div class="author">${novel_info.data.author.name}</div><div class="subtitle">${sub_title ? sub_title.title : ""}</div><div class="subtitle">${novel_section.data.title}</div><div class="main">${novel_section.data.content_html}</div>`
 		} else if (url.match(/novels\/([0-9]+)/)) {
 			const novel_id = RegExp.$1
 			const novel_info = await this.novelAPI("https://www.magnet-novels.com/api/novel/reader/getNovelInfo", `novel_id=${novel_id}`)
 			const novel_contents = await this.novelAPI("https://www.magnet-novels.com/api/web/v2/reader/getNovelContents", `novel_id=${novel_id}`)
 			let html_arr = []
-			for(const item of novel_contents.data){
-				if(item.type == 0){
-					html_arr.push(`<div><a href="https://www.magnet-novels.com/novels/${novel_id}/episodes/${item.id}">${item.title}</a></div>`)
+			for (const data of novel_contents.data) {
+				if (data.type == 0) {
+					html_arr.push(`<div class="novel-toc-episode"><a href="https://www.magnet-novels.com/novels/${novel_id}/episodes/${data.id}">${data.title}</a></div>`)
 				} else {
-					html_arr.push(`<div>${item.title}</div>`)
+					html_arr.push(`<div class="novel-subtitle">${data.title}</div>`)
 				}
 			}
+			document.title = novel_info.data.name
 			item["html"] = `<div class="title">${novel_info.data.name}</div><div class="author">${novel_info.data.author.name}</div><div>${html_arr.join("")}</div>`
+		} else {
+			let req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
+				url: url,
+				charset: "UTF-8",
+			})}`
+			return fetch(req_url, null)
+				.then(response => response.text())
+				.then(async text => {
+					const doc = TxtMiruLib.HTML2Document(text)
+					document.title = doc.title
+					item["html"] = doc.body.innerHTML
+					return item
+				})
+				.catch(err => {
+					return err
+				})
 		}
 
 		return Promise.resolve(item)

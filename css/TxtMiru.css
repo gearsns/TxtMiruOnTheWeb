@@ -1565,6 +1565,52 @@ button.goto2:hover {
     white-space: pre-wrap;
 }
 
+.Everystar .novel-toc-episode {
+    border-left: 1px solid #ddddd0;
+}
+
+/**/
+
+.Magnet .title
+{
+    font-size: 1.2em;
+    padding-right: 1.2em;
+    padding-left: 1.2em;
+    font-weight: bold;
+    display: block;
+}
+
+.Magnet .author
+{
+    display: block;
+    font-size: 1.2em;
+    text-align: right;
+    font-weight: bold;
+}
+
+.Magnet .main
+{
+    margin: 0;
+    line-height: 1.8;
+    text-align: justify;
+    text-justify: inter-ideograph;
+    font-feature-settings: "palt";
+    line-break: strict;
+    hanging-punctuation: force-end;
+    white-space: pre-wrap;
+}
+
+.Magnet .novel-subtitle {
+    font-size: 1.2em;
+    padding-right: 1.2em;
+    padding-left: 1.2em;
+    font-weight: bold;
+}
+
+.Magnet .novel-toc-episode {
+    border-left: 1px solid #ddddd0;
+}
+
 /**/
 
 .TxtMiruCache p 
@@ -1652,5 +1698,75 @@ button.goto2:hover {
 (orientation:landscape) {
     .prev-episode {
         padding-right: calc(env(safe-area-inset-right) + 0.8em);
+    }
+}
+@media print {
+    @page {
+        size: A4 landscape;
+        padding: 0;
+        margin: auto;
+    }
+    header, .prev-episode, .next-episode, #TxtMiruTopContents {
+        display: none;
+    }
+    main.TxtMiru {
+        font-size: 1rem;
+        position: absolute;
+        overflow: visible;
+        width: auto;
+        height: 155mm;
+        padding: 0;
+        margin-top: 10mm;
+    }
+    #contents {
+        font-size: 1.5rem;
+        position: relative;
+        overflow: visible;
+        width: auto;
+        height: 155mm;
+        margin: 0;
+        padding: 0;
+        word-break: break-all;
+    }
+    main.zoom_p1 {
+        font-size: 1rem;
+        zoom: 1;
+    }
+    
+    main.zoom_m1 {
+        font-size: 1rem;
+        zoom: 1;
+    }
+    html,
+    body {
+        zoom: 1;
+        width: 251mm;
+        height: 175mm;
+        padding: 0;
+        margin: 0;
+        position: relative;
+        overflow: visible;
+        -webkit-writing-mode: vertical-rl;
+        -ms-writing-mode: tb-rl;
+        writing-mode: vertical-rl;
+        word-break: break-all;
+    }
+    .kaicho {
+        page-break-before: always;
+    }
+    .new-page {
+        page-break-before: always;
+    }
+    .new-mihiraki {
+        page-break-before: always;
+    }
+    .new-block {
+        page-break-before: always;
+    }
+    a {
+        text-decoration: none !important;
+    }
+    .page-break {
+        page-break-before: always;
     }
 }

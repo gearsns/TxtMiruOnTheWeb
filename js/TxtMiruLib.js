@@ -286,7 +286,7 @@ const convert_tatechuuyoko_num = doc => {
 const yakumono_space = node => {
 	if (node.nodeType == 3) {
 		//let re_yakumono_space = /([（〔「『［【〈《‘“）〕」』』］】〉》’”。．、，]+)/g
-		const re_yakumono_space = /([（〔「『［【〈《）〕」』』］】〉》。．、，]+)/g
+		const re_yakumono_space = /([（〔「『［【〈《）〕」』］】〉》。．、，]+)/g
 		if (node.parentNode.className == "yakumo_spacing"
 			|| !node.nodeValue.match(re_yakumono_space)) {
 			return
@@ -425,27 +425,31 @@ const counterJapaneseHyphenation = doc => {
 	for (const el of doc.getElementsByClassName("tatechuyoko")) {
 		nodes.push(el)
 	}
+	//const reNotPerStart = /^([(\)\[）〕」』］】〉》’”。．、，]+)/
+	//const reNotPerEnd = /([\(\[（〔「『［【〈《‘“]+$)/
+	const reNotPerStart = /^([,\)\]｝、〕〉》」』】〙〗〟’”．，｠»ゝゞーァィゥェォッャュョヮヵヶぁぃぅぇぉっゃゅょゎゕゖㇰㇱㇲㇳㇴㇵㇶㇷㇸㇹㇷ゚ㇺㇻㇼㇽㇾㇿ々〻\-\‐゠–〜～\?!‼⁇⁈⁉・:;\/。.]+)/
+	const reNotPerEnd = /([\(\[（｛〔〈《「『【〘〖〝‘“｟«]+$)/
 	for (const el of nodes) {
 		const previousNode = el.previousSibling
 		const nextNode = el.nextSibling
 		let nextMoveNode = null
 		let previousText = ""
 		let nextText = ""
-		if (previousNode && previousNode.nodeType == 3 && previousNode.nodeValue.match(/([\(\[（〔「『［【〈《‘“]+$)/)) {
+		if (previousNode && previousNode.nodeType == 3 && previousNode.nodeValue.match(reNotPerEnd)) {
 			previousText = RegExp.$1
-			previousNode.nodeValue = previousNode.nodeValue.replace(/[\(\[（〔「『［【〈《‘“]+$/, "")
+			previousNode.nodeValue = previousNode.nodeValue.replace(reNotPerEnd, "")
 		}
-		if (nextNode && nextNode.nodeType == 3 && nextNode.nodeValue.match(/^([(\)\[）〕」』』］】〉》’”。．、，]+)/)) {
+		if (nextNode && nextNode.nodeType == 3 && nextNode.nodeValue.match(reNotPerStart)) {
 			nextText = RegExp.$1
-			nextNode.nodeValue = nextNode.nodeValue.replace(/^[(\)\[）〕」』』］】〉》’”。．、，]+/, "")
+			nextNode.nodeValue = nextNode.nodeValue.replace(reNotPerStart, "")
 		} else if (nextNode && nextNode.nodeType == 1 && nextNode.className == "yakumono_spacing") {
 			nextMoveNode = nextNode
 		}
 		if (previousText.length == 0 && el.className == "tatechuyoko"
 			&& el.innerText.match(/[‼‼︎！？⁈⁇⁉\!\?]/)
-			&& previousNode && previousNode.nodeType == 3 && previousNode.nodeValue.match(/(.$)/)) {
+			&& previousNode && previousNode.nodeType == 3 && previousNode.nodeValue.match(/(.[,\)\]｝、〕〉》」』】〙〗〟’”．，｠»ゝゞーァィゥェォッャュョヮヵヶぁぃぅぇぉっゃゅょゎゕゖㇰㇱㇲㇳㇴㇵㇶㇷㇸㇹㇷ゚ㇺㇻㇼㇽㇾㇿ々〻\-\‐゠–〜～\?!‼⁇⁈⁉・:;\/。.]*$)/)) {
 			previousText = RegExp.$1
-			previousNode.nodeValue = previousNode.nodeValue.replace(/.$/, "")
+			previousNode.nodeValue = previousNode.nodeValue.slice(0, -previousText.length)
 		}
 		if (previousText.length > 0 || nextText.length > 0 || nextMoveNode) {
 			const span = doc.createElement("span")
@@ -458,7 +462,11 @@ const counterJapaneseHyphenation = doc => {
 			if (nextText.length > 0) {
 				span.appendChild(doc.createTextNode(nextText))
 			} else if (nextMoveNode) {
+				let nextNextMoveNode = nextMoveNode.nextSibling
 				span.appendChild(nextMoveNode)
+				if(nextNextMoveNode){
+					span.appendChild(nextNextMoveNode)
+				}
 			}
 		}
 	}

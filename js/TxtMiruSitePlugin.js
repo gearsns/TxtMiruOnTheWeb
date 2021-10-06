@@ -1,4 +1,4 @@
-import { TxtMiruLib } from './TxtMiruLib.js?1.0.5.0'
+import { TxtMiruLib } from './TxtMiruLib.js?1.0.6.0'
 import fetchJsonp from './fetch-jsonp.js'
 
 const appendSlash = text => {
@@ -1091,7 +1091,6 @@ class Akatsuki extends TxtMiruSitePlugin {
 				name = el_title.innerText
 			}
 			for (const el of doc.getElementsByTagName("H3")) {
-				console.log(el)
 				if (el.innerText.match(/作者：/)) {
 					const el_a_arr = el.getElementsByTagName("A")
 					if (el_a_arr.length == 1) {
@@ -1100,7 +1099,6 @@ class Akatsuki extends TxtMiruSitePlugin {
 					}
 				}
 			}
-			console.log(author)
 			return {
 				url: removeSlash(url),
 				max_page: max_page,
@@ -1565,3 +1563,189 @@ class Magnet extends TxtMiruSitePlugin {
 	Name = () => "マグネット"
 }
 TxtMiruSiteManager.AddSite(new Magnet())
+
+class Pixiv extends TxtMiruSitePlugin {
+	Match = url => url.match(/https:\/\/www\.pixiv\.net\/novel\//)
+	novelAPI = (txtMiru, func) => fetch(`${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
+		url: func,
+		charset: "UTF-8"
+	})}`).then(response => response.json())
+	GetDocument = async (txtMiru, url) => {
+		const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
+			url: url,
+			charset: "UTF-8"
+		})}`
+		return fetch(req_url, null)
+			.then(response => response.text())
+			.then(async text => {
+				let doc = TxtMiruLib.HTML2Document(text)
+				document.title = doc.title
+				let author = ""
+				TxtMiruLib.KumihanMod(url, doc)
+				let item = {
+					className: "Pixiv",
+					"episode-index-text": "pixiv",
+					"episode-index": "https://www.pixiv.net/novel/"
+				}
+				if (url.match(/https:\/\/www\.pixiv\.net\/novel\/member\.php\?id=/)) {
+					// [pixiv] プロフィール
+					let nodes = doc.getElementsByTagName("h1")
+					for (let i = nodes.length - 1; i >= 0; --i) {
+						const node = nodes[i]
+						if (node.className.match(/^name$/) && node.innerText.length > 0) {
+							author = node.innerText
+						}
+					}
+					nodes = doc.getElementsByTagName("h2");
+					for (let i = nodes.length - 1; i >= 0; --i) {
+						const node = nodes[i]
+						if (node.className.match(/^name$/) && node.innerText.length > 0) {
+							author = node.innerText
+						}
+					}
+					let profilecomment = ""
+					let html = ""
+					nodes = doc.getElementsByTagName("div")
+					for (let i = nodes.length - 1; i >= 0; --i) {
+						const node = nodes[i]
+						if (node.className.match(/novel\-contents/)) {
+							profilecomment += node.innerHTML
+						} else if (node.className.match(/require\-register/)) {
+							html += node.innerHTML
+						}
+					}
+					item["html"] = `${profilecomment}${html}`
+				} else if (url.match(/https:\/\/www\.pixiv\.net\/novel\//)) {
+					// [pixiv] 小説
+					let title = ""
+					let author = ""
+					let html_arr = []
+					if (url.match(/https:\/\/www\.pixiv\.net\/novel\/series\/([0-9]+)/)) {
+						const id = RegExp.$1
+						const novel_contents = await this.novelAPI(txtMiru, `https://www.pixiv.net/ajax/novel/series/${id}?lang=ja`)
+						title = novel_contents.body.title
+						author = novel_contents.body.userName
+						html_arr.push("<br>")
+						html_arr.push(novel_contents.body.extraData.meta.description)
+						let order = 0
+						html_arr.push(`<h3>目次</h3><ol class="novel-toc-items">`)
+						do {
+							const json = await this.novelAPI(txtMiru, `https://www.pixiv.net/ajax/novel/series_content/${id}?limit=10&last_order=${order}&order_by=asc&lang=ja`)
+							if (json.body["seriesContents"].length <= 0) {
+								break
+							}
+							for (const series_content of json.body["seriesContents"]) {
+								let date = new Date()
+								date.setTime(series_content.reuploadTimestamp * 1000)
+								const date_str = date.getFullYear() + "年" + (date.getMonth() + 1) + "月" + date.getDate() + "日"
+								html_arr.push(`<li class="novel-toc-episode"><a href='https://www.pixiv.net/novel/show.php?id=${series_content.id}'>${series_content.title}</a><span class="novel-toc-episode-datePublished">${date_str}</span></li>`)
+							}
+							order += 10
+						} while (true)
+						html_arr.push("</ol>")
+					} else if (url.match(/https:\/\/www\.pixiv\.net\/novel\/show\.php\?id=([0-9]+)/)) {
+						const id = RegExp.$1
+						try {
+							const meta_content = doc.getElementsByName('preload-data')[0].content
+							//
+							const json = JSON.parse(meta_content)
+							const data = json.novel[id]
+							const content = data.content
+							author = data.userName
+							title = data.title
+							try {
+								title = `<a href="https://www.pixiv.net/novel/series/${data.seriesNavData.seriesId}">${data.seriesNavData.title}</a>`
+								item["episode-index"] = `https://www.pixiv.net/novel/series/${data.seriesNavData.seriesId}`
+								item["episode-index-text"] = "目次へ"
+							} catch (e) { }
+							try {
+								item["next-episode"] = `https://www.pixiv.net/novel/show.php?id=${data.seriesNavData.next.id}`
+								item["next-episode-text"] = "次へ"
+							} catch (e) { }
+							try {
+								item["prev-episode"] = `https://www.pixiv.net/novel/show.php?id=${data.seriesNavData.prev.id}`
+								item["prev-episode-text"] = "前へ"
+							} catch (e) { }
+							let doc0 = TxtMiruLib.HTML2Document(content)
+							TxtMiruLib.KumihanMod(url, doc0)
+							html_arr.push(doc0.body.innerHTML)
+						} catch (e) {
+						}
+					}
+					item["html"] = `<div class="title">${title}</div><div class="author">${author}</div><div class="main">${html_arr.join("")}</div>`
+				}
+				return Promise.resolve(item)
+			})
+			.catch(err => {
+				return err
+			})
+	}
+	GetInfo = async (txtMiru, url, callback = null) => {
+		if (Array.isArray(url)) {
+			let results = []
+			for (const u of url) {
+				if (this.Match(u)) {
+					const item = await this.GetInfo(txtMiru, u, callback)
+					if (item != null) {
+						results.push(item)
+					}
+				}
+			}
+			return results
+		} else if (this.Match(url)) {
+			if (callback) {
+				callback([url])
+			}
+			let novel_id = ""
+			let index_url = ""
+			if (url.match(/https:\/\/www\.pixiv\.net\/novel\/show\.php\?id=([0-9]+)/)) {
+				const novel_contents = await fetch(`${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
+					url: removeSlash(url),
+					charset: "UTF-8"
+				})}`).then(response => response.text())
+				let doc = TxtMiruLib.HTML2Document(novel_contents)
+				let meta_content = doc.getElementsByName('preload-data')[0].content
+				let json = JSON.parse(meta_content)
+				let data = json.novel[novel_id]
+				index_url = `https://www.pixiv.net/ajax/novel/series/${data.seriesNavData.seriesId}?lang=ja`
+			} else if (url.match(/novel\/series\/([0-9]+)/)) {
+				novel_id = RegExp.$1
+				index_url = `https://www.pixiv.net/ajax/novel/series/${novel_id}?lang=ja`
+			} else {
+				return null
+			}
+			//
+			const novel_contents = await this.novelAPI(txtMiru, `https://www.pixiv.net/ajax/novel/series/${novel_id}?lang=ja`)
+			return {
+				url: removeSlash(url),
+				max_page: novel_contents.body.displaySeriesContentCount,
+				name:  novel_contents.body.title,
+				author: novel_contents.body.userName
+			}
+		}
+		return null
+	}
+	GetPageNo = async (txtMiru, url) => {
+		if (this.Match(url)) {
+			url = appendSlash(url)
+			if (url.match(/https:\/\/www\.pixiv\.net\/novel\/show\.php\?id=([0-9]+)/)) {
+				const novel_id = RegExp.$1
+				const novel_contents = await fetch(`${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
+					url: removeSlash(url),
+					charset: "UTF-8"
+				})}`).then(response => response.text())
+				let doc = TxtMiruLib.HTML2Document(novel_contents)
+				let meta_content = doc.getElementsByName('preload-data')[0].content
+				let json = JSON.parse(meta_content)
+				let data = json.novel[novel_id]
+				return { url: removeSlash(url), page_no: parseInt(data.pageCount) + 1, index_url: `https://www.pixiv.net/novel/series/${data.seriesNavData.seriesId}` }
+			} else if (url.match(/novels\/series\/([0-9]+)/)) {
+				const novel_id = RegExp.$1
+				return { url: removeSlash(url), page_no: 0, index_url: `https://www.pixiv.net/novel/series/${novel_id}` }
+			}
+		}
+		return null
+	}
+	Name = () => "pixiv"
+}
+TxtMiruSiteManager.AddSite(new Pixiv())

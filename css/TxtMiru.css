@@ -867,6 +867,15 @@ p {
     min-width: 3em;
 }
 
+#novel_list .updated {
+    font-size: 50%;
+    border-radius: 0.25em;
+    background-color: #28a745;;
+    color: #fff;
+    padding: 0.25em;
+    margin-right: 0.25em;
+}
+
 .check_on .check::before {
     position: absolute;
     top: 0.2em;
@@ -1632,6 +1641,61 @@ button.goto2:hover {
 .TxtMiruCache em {
     font-style: normal;
 }
+
+/**/
+
+.Pixiv .title
+{
+    font-size: 1.2em;
+    padding-right: 1.2em;
+    padding-left: 1.2em;
+    font-weight: bold;
+    display: block;
+}
+
+.Pixiv .author
+{
+    display: block;
+    font-size: 1.2em;
+    text-align: right;
+    font-weight: bold;
+}
+
+.Pixiv .main
+{
+    margin: 0;
+    line-height: 1.8;
+    text-align: justify;
+    text-justify: inter-ideograph;
+    font-feature-settings: "palt";
+    line-break: strict;
+    hanging-punctuation: force-end;
+    white-space: pre-wrap;
+}
+
+.Pixiv .novel-subtitle {
+    font-size: 1.2em;
+    padding-right: 1.2em;
+    padding-left: 1.2em;
+    font-weight: bold;
+}
+
+.Pixiv .novel-toc-episode {
+    border-left: 1px solid #ddddd0;
+}
+
+.Pixiv .novel-toc-items {
+    list-style: none;
+}
+
+.Pixiv .novel-toc-episode-datePublished {
+    display: block;
+    text-align: right;
+    color: black;
+    text-decoration: none;
+    text-orientation: sideways;
+}
+
 
 /**/
 

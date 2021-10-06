@@ -1,6 +1,6 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.5.0'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.5.0'
-import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.5.0"
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.6.0'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.6.0'
+import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.6.0"
 
 export class TxtMiruFavorite {
 	constructor(txtMiru) {
@@ -51,7 +51,7 @@ export class TxtMiruFavorite {
 	}
 
 	reload = async () => {
-		const e_novel_list = document.getElementById("novel_list") 
+		const e_novel_list = document.getElementById("novel_list")
 		e_novel_list.style.visibility = "hidden"
 		this.txtMiruLoading.begin()
 		const list = await this.txtMiruDB.getFavoriteList()
@@ -73,7 +73,11 @@ export class TxtMiruFavorite {
 					item.max_page = 1
 					item.cur_page = 1
 				}
-				tr_list.push(`<tr item_id="${item.id}" url="${item.url}" cur_url="${item.cur_url}"><th>${num}<div class="check"></div><td>${item.cur_page}<td>/<td>${item.max_page}<td class="novel_title">${item.name}<br>${item.author}<td>${site_name}`)
+				let tag_add = ""
+				if (parseInt(item.cur_page) < parseInt(item.max_page)) {
+					tag_add = `<span class="updated">New</span>`
+				}
+				tr_list.push(`<tr item_id="${item.id}" url="${item.url}" cur_url="${item.cur_url}"><th>${num}<div class="check"></div><td>${item.cur_page}<td>/<td>${item.max_page}<td>${tag_add}<span class="novel_title">${item.name}</span><br>${item.author}<td>${site_name}`)
 			}
 		}
 		e_novel_list.style.visibility = "visible"
@@ -165,7 +169,7 @@ export class TxtMiruFavorite {
 					}
 				}
 			}
-			if(url_list.length == 0){
+			if (url_list.length == 0) {
 				for (const tr of tr_list) {
 					const url = tr.getAttribute("url")
 					if (url) {
@@ -177,16 +181,16 @@ export class TxtMiruFavorite {
 			for (const site of TxtMiruSiteManager.SiteList()) {
 				results = await site.GetInfo(txtMiru, url_list, item_list => {
 					let arr = ["取得中..."]
-					for(const url of item_list){
+					for (const url of item_list) {
 						let exists = false
 						for (const tr of tr_list) {
-							if(url == tr.getAttribute("url")){
+							if (url == tr.getAttribute("url")) {
 								arr.push(tr.getElementsByClassName("novel_title")[0].innerText)
 								exists = true
 								break
 							}
 						}
-						if(!exists){
+						if (!exists) {
 							arr.push(url)
 						}
 					}

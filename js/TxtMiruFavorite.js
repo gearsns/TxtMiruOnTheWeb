@@ -1,9 +1,10 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.6.0'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.6.0'
-import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.6.0"
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.7.0'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.7.0'
+import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.7.0"
 
 export class TxtMiruFavorite {
 	constructor(txtMiru) {
+		this.favoriteList = []
 		this.txtMiru = txtMiru
 		this.txtMiruDB = txtMiru.txtMiruDB
 		this.txtMiruLoading = new TxtMiruLoading()
@@ -18,8 +19,8 @@ export class TxtMiruFavorite {
 <button id="favorite-continue" class="goto2">続きから</button>
 	<div class="sticky_table">
 		<table id="novel_list" class="sticky_table">
-			<thead>
-				<tr><th>#<th colspan="3">ページ<th>タイトル<br>著者<th>掲載
+			<thead id="novel_list_head">
+				<tr><th><div name="list_no" style="height:100%">#</div><th colspan="3"><div name="page">ページ</div><th><div name="title"><div name="new" class="updated" style="display:inline">New</div>タイトル</div><div name="author">著者</div><th><div name="site">掲載</div>
 			</thead>
 			<tbody id="novel_list_body"></tbody>
 		</table>
@@ -50,16 +51,119 @@ export class TxtMiruFavorite {
 		this.reload()
 	}
 
-	reload = async () => {
+	dispList = () => {
 		const e_novel_list = document.getElementById("novel_list")
-		e_novel_list.style.visibility = "hidden"
-		this.txtMiruLoading.begin()
-		const list = await this.txtMiruDB.getFavoriteList()
+		const list = this.favoriteList
 		let tr_list = []
 		let num = 0
 		if (!list || list.length == 0) {
 			tr_list.push(`<tr><td colspan="6" style="width:100vw">お気に入りが登録されていません。</td></tr>`)
 		} else {
+			const column_name = this.txtMiru.setting["favorite-sort-column"]
+			const column_name_order = this.txtMiru.setting["favorite-sort-column-order"]
+			const order_asc = column_name === column_name_order
+			if (column_name === "list_no") {
+				list.sort((a, b) => {
+					let r = 0
+					if (order_asc) {
+						r = parseInt(a.id) - parseInt(b.id)
+					} else {
+						r = parseInt(b.id) - parseInt(a.id)
+					}
+					return r
+				})
+			} else if (column_name === "title") {
+				list.sort((a, b) => {
+					let r = 0
+					if (order_asc) {
+						r = a.name.localeCompare(b.name)
+					} else {
+						r = b.name.localeCompare(a.name)
+					}
+					if (r === 0) {
+						r = a.author.localeCompare(b.author)
+					}
+					if (r === 0) {
+						r = parseInt(a.id) - parseInt(b.id)
+					}
+					return r
+				})
+			} else if (column_name === "page") {
+				list.sort((a, b) => {
+					let r = 0
+					if (order_asc) {
+						r = parseInt(a.max_page) - parseInt(b.max_page)
+					} else {
+						r = parseInt(b.max_page) - parseInt(a.max_page)
+					}
+					if (r === 0) {
+						r = a.name.localeCompare(b.name)
+					}
+					if (r === 0) {
+						r = a.author.localeCompare(b.author)
+					}
+					if (r === 0) {
+						r = parseInt(a.id) - parseInt(b.id)
+					}
+					return r
+				})
+			} else if (column_name === "author") {
+				list.sort((a, b) => {
+					let r = 0
+					if (order_asc) {
+						r = a.author.localeCompare(b.author)
+					} else {
+						r = b.author.localeCompare(a.author)
+					}
+					if (r === 0) {
+						r = a.name.localeCompare(b.name)
+					}
+					if (r === 0) {
+						r = parseInt(a.id) - parseInt(b.id)
+					}
+					return r
+				})
+			} else if (column_name === "site") {
+				list.sort((a, b) => {
+					let r = 0
+					if (order_asc) {
+						r = a.url.localeCompare(b.url)
+					} else {
+						r = b.url.localeCompare(a.url)
+					}
+					if (r === 0) {
+						r = parseInt(a.id) - parseInt(b.id)
+					}
+					return r
+				})
+			} else if (column_name === "new") {
+				list.sort((a, b) => {
+					let r = 0
+					const a_new = parseInt(a.cur_page) < parseInt(a.max_page)
+					const b_new = parseInt(b.cur_page) < parseInt(b.max_page)
+					if (order_asc) {
+						if(a_new && b_new){
+
+						} else if(a_new){
+							r = -1
+						} else {
+							r = 1
+						}
+					} else {
+						if(a_new && b_new){
+
+						} else if(a_new){
+							r = 1
+						} else {
+							r = -1
+						}
+					}
+					if (r === 0) {
+						r = parseInt(a.id) - parseInt(b.id)
+					}
+					return r
+				})
+			}
 			for (const item of list) {
 				++num
 				let site_name = ""
@@ -80,8 +184,16 @@ export class TxtMiruFavorite {
 				tr_list.push(`<tr item_id="${item.id}" url="${item.url}" cur_url="${item.cur_url}"><th>${num}<div class="check"></div><td>${item.cur_page}<td>/<td>${item.max_page}<td>${tag_add}<span class="novel_title">${item.name}</span><br>${item.author}<td>${site_name}`)
 			}
 		}
-		e_novel_list.style.visibility = "visible"
 		document.getElementById("novel_list_body").innerHTML = tr_list.join("")
+	}
+	reload = async () => {
+		const e_novel_list = document.getElementById("novel_list")
+		e_novel_list.style.visibility = "hidden"
+		this.txtMiruLoading.begin()
+		const list = await this.txtMiruDB.getFavoriteList()
+		this.favoriteList = list
+		this.dispList()
+		e_novel_list.style.visibility = "visible"
 		this.txtMiruLoading.end()
 	}
 
@@ -279,6 +391,31 @@ export class TxtMiruFavorite {
 				TxtMiruMessageBox.show("お気に入りから削除したいページを選択してください。", { "buttons": ["閉じる"] }).then(e => {
 				})
 			}
+		})
+		// ソート
+		document.getElementById("novel_list_head").addEventListener("click", e => {
+			let target = null
+			if (e.target.tagName == "DIV") {
+				target = e.target
+			} else if (e.target.tagName == "TD" || e.target.tagName == "TH") {
+				target = e.target.children[0]
+			} else {
+				return false
+			}
+			if (target) {
+				if (txtMiru.setting["favorite-sort-column-order"] === target.getAttribute("name")) {
+					txtMiru.setting["favorite-sort-column-order"] = ""
+				} else {
+					txtMiru.setting["favorite-sort-column-order"] = target.getAttribute("name")
+				}
+				txtMiru.setting["favorite-sort-column"] = target.getAttribute("name")
+				txtMiru.saveSetting().then(ret => {
+					txtMiru.reflectSetting()
+				}).catch(ret => {
+				})
+				this.dispList()
+			}
+			return false
 		})
 		// 列ダブルクリックで続きから
 		document.getElementById("novel_list_body").addEventListener("dblclick", e => {

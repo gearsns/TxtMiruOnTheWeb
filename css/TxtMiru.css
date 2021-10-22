@@ -1107,6 +1107,10 @@ button.goto2:hover {
     display: none;
 }
 
+.Kakuyomu {
+    text-align: justify;
+}
+
 .Kakuyomu .widget-episodeTitle {
     padding-right: 0.8em;
     padding-left: 0.8em;

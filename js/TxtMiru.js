@@ -1,9 +1,9 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.6.0'
-import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.6.0'
-import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.6.0'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.6.0'
-import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.6.0'
-import { TxtMiruDB } from './TxtMiruDB.js?1.0.6.0'
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.7.0'
+import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.7.0'
+import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.7.0'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.7.0'
+import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.7.0'
+import { TxtMiruDB } from './TxtMiruDB.js?1.0.7.0'
 
 const TxtMiruTitle = "TxtMiru on the Web"
 // DOM

@@ -1,45 +1,54 @@
 body.dark {
-	background: rgb(71, 71, 71);
+    background: rgb(71, 71, 71);
 }
+
 body.dark main {
-	background: #303030;
-	color: rgb(216, 209, 189);
+    background: #303030;
+    color: rgb(216, 209, 189);
 }
 
 body.dark #contents a {
-	color: rgb(123, 147, 255);
+    color: rgb(123, 147, 255);
 }
 
-body.dark ::-webkit-scrollbar{
-	background: black;
+body.dark ::-webkit-scrollbar {
+    background: black;
 }
-body.dark ::-webkit-scrollbar-track{
-	background: #131313;
+
+body.dark ::-webkit-scrollbar-track {
+    background: #131313;
 }
-body.dark ::-webkit-scrollbar-thumb{
-	background: rgb(56, 56, 56);
+
+body.dark ::-webkit-scrollbar-thumb {
+    background: rgb(56, 56, 56);
 }
 
 body.dark .Narou .chapter_title {
-	color: #757575;
+    color: #757575;
 }
-body.dark .Kakuyomu .widget-toc-episode-datePublished
-{
-	display: block;
-	text-align: right;
-	color: rgb(216, 209, 189);
-	text-decoration: none;
+
+body.dark .Kakuyomu .widget-toc-episode-datePublished {
+    display: block;
+    text-align: right;
+    color: rgb(216, 209, 189);
+    text-decoration: none;
 }
 
 body.dark .menu-trigger {
-	position: relative;
-	width: 3rem;
-	height: 3rem;
-	background: rgb(56, 56, 56);
-	border: none;
-	appearance: none;
-	cursor: pointer;
-  }
-  body.dark .menu-trigger:hover {
-	  background: rgb(56, 56, 56); /* #18b7cd;*/
-  }
+    position: relative;
+    width: 3rem;
+    height: 3rem;
+    background: rgb(56, 56, 56);
+    border: none;
+    appearance: none;
+    cursor: pointer;
+}
+
+body.dark .menu-trigger:hover {
+    background: rgb(56, 56, 56);
+    /* #18b7cd;*/
+}
+
+body.dark .TxtMiru .chapter_title {
+    color: #757575;
+}

@@ -1,3 +1,5 @@
+import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.8.0"
+
 export class TxtMiruConfig {
 	constructor(txtMiru) {
 		this.txtMiru = txtMiru
@@ -6,6 +8,8 @@ export class TxtMiruConfig {
 		this.configElement.innerHTML = `
 <div id="config-box-inner" class="config-box-inner">
 <button id="config-regist">保存</button><button id="config-rebuild-db" style="display:none">DB再構築</button>
+<button id="config-reset" class="update">デフォルト設定に戻す</button>
+<button id="config-close" class="seigaiha_blue">閉じる</button>
 		<dl>
 		<dt>テーマ
 		<dd class="config-radio-area">
@@ -30,41 +34,54 @@ export class TxtMiruConfig {
 		document.body.appendChild(this.configElement)
 	}
 
+	setValue = setting => {
+		if(setting["theme"] == "light"){
+			document.getElementById("config-theme-type-light").checked = true
+		} else if(setting["theme"] == "dark"){
+			document.getElementById("config-theme-type-dark").checked = true
+		} else {
+			document.getElementById("config-theme-type-light").checked = true
+		}
+		if(setting["font-size"] == "large"){
+			document.getElementById("config-font-size-large").checked = true
+		} else if(setting["font-size"] == "small"){
+			document.getElementById("config-font-size-small").checked = true
+		} else {
+			document.getElementById("config-font-size-middle").checked = true
+		}
+		if(setting["menu-position"] == "bottom"){
+			document.getElementById("config-menu-position-bottom").checked = true
+		} else {
+			document.getElementById("config-menu-position-top").checked = true
+		}
+		if(setting["over18"] == "yes"){
+			document.getElementById("config-over18-yes").checked = true
+		} else {
+			document.getElementById("config-over18-no").checked = true
+		}
+		if(setting["WebServerUrl"]){
+			document.getElementById("config-server-url").value = setting["WebServerUrl"]
+		} else {
+			document.getElementById("config-server-url").value = ""
+		}
+		if(setting["WebSocketServerUrl"]){
+			document.getElementById("config-websocket-server-url").value = setting["WebSocketServerUrl"]
+		} else {
+			document.getElementById("config-websocket-server-url").value = ""
+		}
+		if(setting["UserID"]){
+			document.getElementById("config-user-id").value = setting["UserID"]
+		} else {
+			document.getElementById("config-user-id").value = ""
+		}
+	}
 	show = async (txtMiru) => {
 		if(txtMiru.display_popup){
 			return
 		}
 		txtMiru.display_popup = true
 		this.configElement.className = "show-config"
-		if(txtMiru.setting["theme"] == "light"){
-			document.getElementById("config-theme-type-light").checked = true
-		} else if(txtMiru.setting["theme"] == "dark"){
-			document.getElementById("config-theme-type-dark").checked = true
-		}
-		if(txtMiru.setting["font-size"] == "large"){
-			document.getElementById("config-font-size-large").checked = true
-		} else if(txtMiru.setting["font-size"] == "small"){
-			document.getElementById("config-font-size-small").checked = true
-		}
-		if(txtMiru.setting["menu-position"] == "bottom"){
-			document.getElementById("config-menu-position-bottom").checked = true
-		} else {
-			document.getElementById("config-menu-position-top").checked = true
-		}
-		if(txtMiru.setting["over18"] == "yes"){
-			document.getElementById("config-over18-yes").checked = true
-		} else {
-			document.getElementById("config-over18-no").checked = true
-		}
-		if(txtMiru.setting["WebServerUrl"]){
-			document.getElementById("config-server-url").value = txtMiru.setting["WebServerUrl"]
-		}
-		if(txtMiru.setting["WebSocketServerUrl"]){
-			document.getElementById("config-websocket-server-url").value = txtMiru.setting["WebSocketServerUrl"]
-		}
-		if(txtMiru.setting["UserID"]){
-			document.getElementById("config-user-id").value = txtMiru.setting["UserID"]
-		}
+		this.setValue(txtMiru.setting)
 	}
 	setEvent = (txtMiru) => {
 		document.getElementById("config-box-inner").addEventListener("click", e => {
@@ -73,6 +90,17 @@ export class TxtMiruConfig {
 		this.configElement.addEventListener("click", e => {
 			this.configElement.className = "hide-config"
 			txtMiru.display_popup = false
+		})
+		document.getElementById("config-close").addEventListener("click", e => {
+			this.configElement.className = "hide-config"
+			txtMiru.display_popup = false
+		})
+		document.getElementById("config-reset").addEventListener("click", e => {
+			TxtMiruMessageBox.show("デフォルトの設定に戻します。", { "buttons": [{ text: "戻す", className: "seigaiha_blue", value: "reset" }, "戻さない"] }).then(async e => {
+				if (e == "reset") {
+					this.setValue(txtMiru.defaultSetting())
+				}
+			})
 		})
 		document.getElementById("config-regist").addEventListener("click", e => {
 			if(document.getElementById("config-theme-type-light").checked){

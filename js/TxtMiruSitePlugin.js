@@ -1,4 +1,4 @@
-import { TxtMiruLib } from './TxtMiruLib.js?1.0.7.0'
+import { TxtMiruLib } from './TxtMiruLib.js?1.0.8.0'
 import fetchJsonp from './fetch-jsonp.js'
 
 const appendSlash = text => {

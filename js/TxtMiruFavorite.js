@@ -1,6 +1,6 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.7.0'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.7.0'
-import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.7.0"
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.8.0'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.8.0'
+import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.8.0"
 
 export class TxtMiruFavorite {
 	constructor(txtMiru) {
@@ -17,6 +17,7 @@ export class TxtMiruFavorite {
 <button id="favorite-update" class="update">最新の情報に更新</button>
 <button id="favorite-first" class="goto">トップから</button>
 <button id="favorite-continue" class="goto2">続きから</button>
+<button id="favorite-close" class="seigaiha_blue">閉じる</button>
 	<div class="sticky_table">
 		<table id="novel_list" class="sticky_table">
 			<thead id="novel_list_head">
@@ -36,6 +37,7 @@ export class TxtMiruFavorite {
 <input class="url" name="url" id="input-favorite-url">
 </dl>
 <button id="save-favorite-url">登録</button>
+<button id="save-favorite-url-close" class="seigaiha_blue">閉じる</button>
 </div></div>`
 		document.body.appendChild(this.urlElement)
 	}
@@ -264,6 +266,10 @@ export class TxtMiruFavorite {
 			this.favoriteElement.className = "hide-favorite"
 			txtMiru.display_popup = false
 		})
+		document.getElementById("favorite-close").addEventListener("click", e => {
+			this.favoriteElement.className = "hide-favorite"
+			txtMiru.display_popup = false
+		})
 		// お気に入りの追加
 		document.getElementById("favorite-regist").addEventListener("click", e => {
 			this.inputURL()
@@ -351,6 +357,10 @@ export class TxtMiruFavorite {
 		}, false)
 		// URL入力 画面外をクリックで閉じる
 		document.getElementById("input-favorite-box-outer").addEventListener("click", e => {
+			this.urlElement.className = "hide-input-url"
+			txtMiru.display_popup = false
+		})
+		document.getElementById("save-favorite-url-close").addEventListener("click", e => {
 			this.urlElement.className = "hide-input-url"
 			txtMiru.display_popup = false
 		})

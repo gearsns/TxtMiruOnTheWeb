@@ -10,6 +10,7 @@ export class TxtMiruInputURL {
 <input class="url" name="url" id="input-url">
 </dl>
 <button id="jump-url">開く</button>
+<button id="jump-url-close" class="seigaiha_blue">閉じる</button>
 </div></div>`
 		document.body.appendChild(this.urlElement)
 	}
@@ -45,6 +46,10 @@ export class TxtMiruInputURL {
 			e.stopPropagation()
 		}, false)
 		document.getElementById("input-box-outer").addEventListener("click", e => {
+			this.urlElement.className = "hide-input-url"
+			txtMiru.display_popup = false
+		})
+		document.getElementById("jump-url-close").addEventListener("click", e => {
 			this.urlElement.className = "hide-input-url"
 			txtMiru.display_popup = false
 		})

@@ -1,9 +1,10 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.9.0'
-import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.9.0'
-import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.9.0'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.9.0'
-import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.9.0'
-import { TxtMiruDB } from './TxtMiruDB.js?1.0.9.0'
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.10.0'
+import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.10.0'
+import { TxtMiruLocalFile } from './TxtMiruLocalFile.js?1.0.10.0'
+import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.10.0'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.10.0'
+import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.10.0'
+import { TxtMiruDB } from './TxtMiruDB.js?1.0.10.0'
 
 const TxtMiruTitle = "TxtMiru on the Web"
 // DOM
@@ -76,6 +77,7 @@ export class TxtMiru {
 			}).finally(() => {
 				TxtMiruSiteManager.txtMiru = this
 				this.txtMiruLoading = new TxtMiruLoading()
+				this.txtMiruLocalFile = new TxtMiruLocalFile(this)
 				this.txtMiruInputURL = new TxtMiruInputURL(this)
 				this.txtMiruFavorite = new TxtMiruFavorite(this)
 				this.txtMiruConfig = new TxtMiruConfig(this)
@@ -308,6 +310,7 @@ export class TxtMiru {
 		this.setHistory(cur_url, title)
 	}
 	//
+	loadLocalFile = () => this.txtMiruLocalFile.show(this)
 	inputURL = () => this.txtMiruInputURL.show(this)
 	//
 	showFavorite = () => this.txtMiruFavorite.show(this)
@@ -322,6 +325,7 @@ export class TxtMiru {
 		"Home": (e) => this.pageTop(),
 		"End": (e) => this.pageEnd(),
 		"KeyL": (e) => this.inputURL(),
+		"KeyO": (e) => this.loadLocalFile(),
 		"KeyF": (e) => this.showFavorite(),
 		"KeyC": (e) => this.showConfig(),
 		"Ctrl+ArrowLeft": (e) => this.gotoNextEpisode(),
@@ -394,6 +398,7 @@ export class TxtMiru {
 			this.LoadNovel(url.searchParams.get('url'), url.searchParams.get('scroll_pos'), true)
 		})
 		//
+		this.txtMiruLocalFile.setEvent(this)
 		this.txtMiruInputURL.setEvent(this)
 		this.txtMiruFavorite.setEvent(this)
 		this.txtMiruConfig.setEvent(this)
@@ -545,7 +550,7 @@ export class TxtMiru {
 			this.contentsElement.innerHTML = html
 			for (const el_a of this.contentsElement.getElementsByTagName("A")) {
 				const href = el_a.getAttribute("href")
-				if (href && href.match(/^http/)) {
+				if (href && href.match(/^(?:http|https|txtmiru):\/\//i)) {
 					let support = false
 					for (let site of TxtMiruSiteManager.SiteList()) {
 						if (site.Match(href)) {

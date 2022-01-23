@@ -31,6 +31,7 @@ TxtMiru on the Webは、ブラウザ上でネット小説「小説家になろ�
    |--|--|
    |Fキー|お気に入り|
    |Lキー|URL|
+   |Oキー|ファイルを開く|
    |Cキー|設定|
    |Ctrl + 左矢印|次のエピソード|
    |Ctrl + 右矢印|前のエピソード|
@@ -70,5 +71,8 @@ git clone https://github.com/gearsns/TxtMiruOnTheWeb.git
 
    ※シート名は先に作成したシートのIDを指定してください。
 
+### 利用しているソフトウェア
+1. Dexie.js https://github.com/dexie/Dexie.js
+1. encoding.js https://github.com/polygonplanet/encoding.js
 
 

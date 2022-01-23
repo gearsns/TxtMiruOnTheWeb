@@ -17,6 +17,9 @@ document.getElementById("btn_config").addEventListener("click", e => {
 	document.getElementById("control-button-panel").className = "hide-control"
 	txtMiru.showConfig()
 })
+document.getElementById("btn_oepn").addEventListener("click", e => {
+	txtMiru.loadLocalFile();
+})
 document.getElementById("btn_url").addEventListener("click", e => {
 	document.getElementById("btn_show").className = "menu-trigger"
 	document.getElementById("control-button-panel").className = "hide-control"
@@ -39,5 +42,5 @@ document.getElementById("btn_end").addEventListener("click", e => {
 	txtMiru.pageEnd()
 })
 
-import { TxtMiru } from './TxtMiru.js?1.0.9.0'
+import { TxtMiru } from './TxtMiru.js?1.0.10.0'
 const txtMiru = new TxtMiru("TxtMiruMain")

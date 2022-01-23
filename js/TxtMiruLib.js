@@ -332,8 +332,8 @@ const convert_ruby = doc => {
 	for (const item of doc.getElementsByTagName("ruby")) {
 		const rt_list = item.getElementsByTagName("rt") // ルビ文字   かんじ
 		let rb_list = item.getElementsByTagName("rb") // ルビベース 漢字
-		if(rb_list.length == 0){
-			for(const node of item.childNodes){
+		if (rb_list.length == 0) {
+			for (const node of item.childNodes) {
 				if (node.nodeType == 3) {
 					const e = doc.createElement("rb")
 					e.appendChild(node)
@@ -464,7 +464,7 @@ const counterJapaneseHyphenation = doc => {
 			} else if (nextMoveNode) {
 				let nextNextMoveNode = nextMoveNode.nextSibling
 				span.appendChild(nextMoveNode)
-				if(nextNextMoveNode){
+				if (nextNextMoveNode) {
 					span.appendChild(nextNextMoveNode)
 				}
 			}
@@ -482,7 +482,7 @@ const convertElementsURL = (doc, url) => {
 	}
 	for (const el of doc.getElementsByTagName("IMG")) {
 		const src = el.getAttribute("src")
-		if (src && !src.match(/^http/)) {
+		if (src && !src.match(/^(?:http|data:image)/)) {
 			el.src = convertAbsoluteURL(url, src)
 		}
 		if (el.getAttribute("width")) {
@@ -513,5 +513,14 @@ export class TxtMiruLib {
 	static HTML2Document = html => {
 		const parser = new DOMParser()
 		return parser.parseFromString(html.replace(/\<script[\s\S]*?\<\/script\>/ig, "").replace(/\<noscript[\s\S]*?\<\/noscript\>/ig, ""), "text/html")
+	}
+	static LoadScript = src => {
+		return new Promise(function (resolve, reject) {
+			let script = document.createElement('script')
+			script.src = src
+			script.onload = () => resolve(script)
+			script.onerror = () => reject(new Error("Script load error: " + src))
+			document.head.append(script)
+		})
 	}
 }

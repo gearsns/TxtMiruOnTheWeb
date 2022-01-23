@@ -416,6 +416,53 @@ p {
     z-index: 2;
 }
 
+/**/
+
+.hide-local-file {
+    display: none;
+}
+
+.show-local-file .url {
+    width: 70%;
+    max-width: 40em;
+}
+
+.show-local-file dt {
+    margin: auto;
+}
+
+.show-local-file dd {
+    margin: auto;
+}
+
+.show-local-file .local-file-box-inner {
+    width: 100%;
+    padding: 10px;
+    font-size: 1.8rem;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.8);
+}
+
+.show-local-file .local-file-box-outer {
+    width: 90%;
+    height: 90%;
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    text-align: center;
+}
+
+.show-local-file {
+    position: fixed;
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    text-align: center;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 3;
+}
 
 /**/
 
@@ -1409,6 +1456,33 @@ button.goto2:hover {
 
 .Aozora .sho3, .Aozora .sho4, .Aozora .sho5 {
     font-size: xx-small;
+}
+
+.Aozora .contents1 .chapter_title {
+    margin-right: 1.2em;
+}
+
+.Aozora .novel_writername {
+    text-align: right;
+    font-weight: bold;
+}
+
+.Aozora .chapter_title {
+    padding-top: 0.8em;
+    padding-right: 1.2em;
+    padding-left: 1.2em;
+    font-weight: bold;
+    background: #eeeee2;
+}
+
+.Aozora #novel_contents .novel_subtitle {
+    padding-right: 0.8em;
+    padding-left: 0.8em;
+    font-weight: bold;
+}
+
+.Aozora dl.novel_sublist2 {
+    border-left: 1px solid #ddddd0;
 }
 
 /**/

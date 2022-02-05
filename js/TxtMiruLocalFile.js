@@ -1,6 +1,3 @@
-import { narou2html } from './narou.js?1.0.10.0'
-import { AozoraText2Html } from './aozora.js?1.0.10.0'
-
 export class TxtMiruLocalFile {
 	constructor(txtMiru) {
 		this.txtMiru = txtMiru
@@ -44,11 +41,13 @@ export class TxtMiruLocalFile {
 			txtMiru.display_popup = false
 		})
 		const load = files => {
-			let url1 = null
+			let url_list = []
+			txtMiru.clearCache()
+			const id = new Date().getTime().toString(16)
 			for (const item of files) {
-				const url = `txtmiru://localfile/${item.webkitRelativePath||item.name}`
-				if (!url1 && item.name.match(/\.(?:html|html|txt)$/i)) {
-					url1 = url
+				const url = `txtmiru://localfile/${id}/${item.fullpath || item.webkitRelativePath || item.name}`
+				if (item.name.match(/\.(?:htm|html|xhtml|txt|zip|epub)$/i)) {
+					url_list.push({ url: url, name: item.fullpath || item.webkitRelativePath || item.name })
 				}
 				let cache = { url: url, html: null, file: item }
 				if (item.name.match(/\.(?:txt)$/i)) {
@@ -57,11 +56,31 @@ export class TxtMiruLocalFile {
 					} else {
 						cache.aozora = true
 					}
+				} else if (item.name.match(/\.(?:zip|epub)$/i)) {
+					cache.zip = true
+					if (document.getElementById("local-file-narou").checked) {
+						cache.narou = true
+					} else {
+						cache.aozora = true
+					}
 				}
 				txtMiru.addCache(cache)
 			}
-			if (url1) {
-				txtMiru.LoadNovel(url1)
+			if (url_list.length === 1) {
+				txtMiru.LoadNovel(url_list[0].url)
+				this.urlElement.className = "hide-local-file"
+				txtMiru.display_popup = false
+			} else {
+				const url = `txtmiru://localfile/${id}`
+				let cache = { url: url, html: null }
+				let html = "<ul>"
+				for (const item of url_list) {
+					html += `<li><a href='${item.url.replace(/^txtmiru:\/\/localfile\//, '')}'>${item.name}</a></li>`
+				}
+				html += "</ul>"
+				cache.html = html
+				txtMiru.addCache(cache)
+				txtMiru.LoadNovel(url)
 				this.urlElement.className = "hide-local-file"
 				txtMiru.display_popup = false
 			}
@@ -74,9 +93,39 @@ export class TxtMiruLocalFile {
 			e.stopPropagation()
 			e.preventDefault()
 		})
-		document.getElementById("local-file-box-inner").addEventListener("drop", e => {
+		document.getElementById("local-file-box-inner").addEventListener("drop", async e => {
 			e.stopPropagation()
 			e.preventDefault()
+			const items = e.dataTransfer.items
+			if (items) {
+				const items = e.dataTransfer.items
+				const fileList = []
+				const traverseFileTree = async (entry, path) => {
+					const _path = path || ""
+					if (entry.isFile) {
+						const file = await new Promise(resolve => {
+							entry.file(file => resolve(file))
+						})
+						file.fullpath = _path + file.name
+						fileList.push(file)
+					} else if (entry.isDirectory) {
+						const directoryReader = entry.createReader()
+						const entries = await new Promise(resolve => {
+							directoryReader.readEntries(entries => resolve(entries))
+						});
+						for (let i = 0; i < entries.length; i++) {
+							await traverseFileTree(entries[i], _path + entry.name + "/")
+						}
+					}
+				}
+				for (const item of items) {
+					await traverseFileTree(item.webkitGetAsEntry())
+				}
+				if (fileList.length > 0) {
+					load(fileList)
+					return
+				}
+			}
 			load(e.dataTransfer.files)
 		})
 		document.getElementById("local-file").addEventListener("change", e => {

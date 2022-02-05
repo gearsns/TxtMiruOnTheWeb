@@ -74,5 +74,5 @@ git clone https://github.com/gearsns/TxtMiruOnTheWeb.git
 ### 利用しているソフトウェア
 1. Dexie.js https://github.com/dexie/Dexie.js
 1. encoding.js https://github.com/polygonplanet/encoding.js
-
+1. JSZip https://stuk.github.io/jszip/
 

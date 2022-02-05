@@ -1,4 +1,4 @@
-import Dexie from './dexie.js'
+import Dexie from './lib/dexie.js'
 
 export class TxtMiruDB {
 	constructor(txtMiru) {

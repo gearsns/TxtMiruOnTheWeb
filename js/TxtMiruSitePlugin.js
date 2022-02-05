@@ -1,7 +1,7 @@
-import { TxtMiruLib } from './TxtMiruLib.js?1.0.10.0'
-import fetchJsonp from './fetch-jsonp.js'
-import { narou2html } from './narou.js?1.0.10.0'
-import { AozoraText2Html } from './aozora.js?1.0.10.0'
+import { TxtMiruLib } from './TxtMiruLib.js?1.0.11.0'
+import fetchJsonp from './lib/fetch-jsonp.js'
+import { narou2html } from './lib/narou.js?1.0.11.0'
+import { AozoraText2Html } from './lib/aozora.js?1.0.11.0'
 
 const appendSlash = text => {
 	if (!text.match(/\/$/)) {
@@ -250,6 +250,11 @@ class LocalSite extends TxtMiruSitePlugin {
 }
 TxtMiruSiteManager.AddSite(new LocalSite())
 
+function string_to_buffer(src) {
+	return (new Uint8Array([].map.call(src, function (c) {
+		return c.charCodeAt(0)
+	}))).buffer;
+}
 const buffer_to_string = (buf) => {
 	return String.fromCharCode.apply("", new Uint8Array(buf))
 }
@@ -267,7 +272,7 @@ const arrayBufferToUnicodeString = async arraybuffer => {
 		return "ファイルを読み込めませんでした。"
 	} else if (loadedEncoding === undefined) {
 		try {
-			await TxtMiruLib.LoadScript("js/encoding.min.js")
+			await TxtMiruLib.LoadScript("js/lib/encoding.min.js")
 			loadedEncoding = true
 		} catch {
 			loadedEncoding = false
@@ -276,6 +281,93 @@ const arrayBufferToUnicodeString = async arraybuffer => {
 	}
 	var array = new Uint8Array(arraybuffer)
 	return Encoding.codeToString(Encoding.convert(array, "UNICODE"))
+}
+let loadedJSZip = undefined
+const arrayBufferUnZip = async arraybuffer => {
+	if (loadedJSZip === false) {
+		return "ファイルを読み込めませんでした。"
+	} else if (loadedJSZip === undefined) {
+		try {
+			await TxtMiruLib.LoadScript("js/lib/jszip.min.js")
+			loadedJSZip = true
+		} catch {
+			loadedJSZip = false
+			return "ファイルを読み込めませんでした。"
+		}
+	}
+	await arrayBufferToUnicodeString([])
+	const new_zip = new JSZip()
+	return await new_zip.loadAsync(arraybuffer, { decodeFileName: fileNameBinary => Encoding.codeToString(Encoding.convert(fileNameBinary, "UNICODE")) }).then(async zip => {
+		let ret = []
+		zip.forEach(async (relativePath, zipEntry) => {
+			ret.push(zipEntry)
+		})
+		return ret
+	})
+}
+
+const epubIndex = async (txtMiru, index_url, cache) => {
+	await new Promise((resolve, reject) => {
+		const reader = new FileReader()
+		reader.onload = async () => {
+			if (cache.zip) {
+				let opf_filename = null
+				let arr = await arrayBufferUnZip(reader.result)
+				for (const item of arr) {
+					let item_cache = { url: `${index_url}/${item.name}`, html: null, zipEntry: item }
+					if (item.name.match(/\.(?:txt)$/i)) {
+						item_cache.narou = cache.narou
+						item_cache.aozora = cache.aozora
+					} else if (item.name === "META-INF/container.xml") {
+						const str_container_xml = await arrayBufferToUnicodeString(await item.async("arraybuffer"))
+						const parser = new DOMParser()
+						const container_xml = parser.parseFromString(str_container_xml, "text/xml")
+						for (const rootfile of container_xml.getElementsByTagName("rootfile")) {
+							opf_filename = rootfile.getAttribute("full-path")
+						}
+					}
+					txtMiru.addCache(item_cache)
+				}
+				let html = ""
+				console.log(opf_filename)
+				if (opf_filename) {
+					for (const item of arr) {
+						if (item.name === opf_filename) {
+							// opf_filename 相対パス
+							const str_opf_xml = await arrayBufferToUnicodeString(await item.async("arraybuffer"))
+							const parser = new DOMParser()
+							const opf_xml = parser.parseFromString(str_opf_xml, "text/xml")
+							let toc_flag = false
+							for (const itemref of opf_xml.getElementsByTagName("spine")) {
+								const toc = itemref.getAttribute("properties")
+								if(toc === "nav"){
+									toc_flag = true
+								}
+							}
+							let toc_array = []
+							for (const itemref of opf_xml.getElementsByTagName("itemref")) {
+								const id = itemref.getAttribute("idref")
+								const e = opf_xml.getElementById(id)
+								if(e){
+									toc_array.push(
+										{
+											href: e.getAttribute("href")
+										}
+									)
+								}
+							}
+							cache.toc = toc_array
+							break
+						}
+					}
+				}
+				resolve(html)
+			} else {
+				resolve("html")
+			}
+		}
+		reader.readAsArrayBuffer(cache.file)
+	})
 }
 
 class TxtMiruCacheSite extends TxtMiruSitePlugin {
@@ -298,18 +390,45 @@ class TxtMiruCacheSite extends TxtMiruSitePlugin {
 		const index_url = this.IndexUrl(url)
 		for (const cache of txtMiru.getCache()) {
 			if (cache.url === index_url) {
-				if (!cache.html && cache.file) {
+				if (!cache.html && cache.zipEntry) {
+					let html = await arrayBufferToUnicodeString(await cache.zipEntry.async("arraybuffer"))
+					if (cache.narou) {
+						html = narou2html(html)
+					} else if (cache.aozora) {
+						html = AozoraText2Html(html)
+					}
+					cache.html = html
+				} else if (!cache.html && cache.file) {
 					// ローカルファイルの読み込み
 					await new Promise((resolve, reject) => {
 						const reader = new FileReader()
 						reader.onload = async () => {
-							let html = await arrayBufferToUnicodeString(reader.result)
-							if (cache.narou) {
-								html = narou2html(html)
-							} else if (cache.aozora) {
-								html = AozoraText2Html(html)
+							if (cache.zip) {
+								if (cache.url.match(/\.epub$/)) {
+									//epubIndex(txtMiru, index_url, cache)
+								}
+								let html = "<ul>"
+								let arr = await arrayBufferUnZip(reader.result)
+								for (const item of arr) {
+									html += `<li><a href='${index_url.replace(/^.*\//i, "./")}/${item.name}'>${item.name}</a></li>`
+									let item_cache = { url: `${index_url}/${item.name}`, html: null, zipEntry: item }
+									if (item.name.match(/\.(?:txt)$/i)) {
+										item_cache.narou = cache.narou
+										item_cache.aozora = cache.aozora
+									}
+									txtMiru.addCache(item_cache)
+								}
+								html += "</ul>"
+								resolve(html)
+							} else {
+								let html = await arrayBufferToUnicodeString(reader.result)
+								if (cache.narou) {
+									html = narou2html(html)
+								} else if (cache.aozora) {
+									html = AozoraText2Html(html)
+								}
+								resolve(html)
 							}
-							resolve(html)
 						}
 						reader.readAsArrayBuffer(cache.file)
 					}).then(html => {
@@ -325,7 +444,11 @@ class TxtMiruCacheSite extends TxtMiruSitePlugin {
 						for (const cache_img of txtMiru.getCache()) {
 							if (cache_img.url === src) {
 								try {
-									el.src = await this.loadImg(cache_img.file)
+									if (cache_img.zipEntry) {
+										el.src = window.btoa(String.fromCharCode.apply(null, new Uint16Array(await cache_img.zipEntry.async("arraybuffer"))))
+									} else if (cache_img.file) {
+										el.src = await this.loadImg(cache_img.file)
+									}
 								} catch {
 								}
 								break

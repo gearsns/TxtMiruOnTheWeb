@@ -1,6 +1,6 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.10.0'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.10.0'
-import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.10.0"
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.11.0'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.11.0'
+import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.11.0"
 
 export class TxtMiruFavorite {
 	constructor(txtMiru) {
@@ -144,17 +144,17 @@ export class TxtMiruFavorite {
 					const a_new = parseInt(a.cur_page) < parseInt(a.max_page)
 					const b_new = parseInt(b.cur_page) < parseInt(b.max_page)
 					if (order_asc) {
-						if(a_new && b_new){
+						if (a_new && b_new) {
 
-						} else if(a_new){
+						} else if (a_new) {
 							r = -1
 						} else {
 							r = 1
 						}
 					} else {
-						if(a_new && b_new){
+						if (a_new && b_new) {
 
-						} else if(a_new){
+						} else if (a_new) {
 							r = 1
 						} else {
 							r = -1
@@ -302,7 +302,11 @@ export class TxtMiruFavorite {
 					for (const url of item_list) {
 						let exists = false
 						for (const tr of tr_list) {
+							if (tr.className === "loading") {
+								tr.className = "check_on"
+							}
 							if (url == tr.getAttribute("url")) {
+								tr.className = "loading"
 								arr.push(tr.getElementsByClassName("novel_title")[0].innerText)
 								exists = true
 								break

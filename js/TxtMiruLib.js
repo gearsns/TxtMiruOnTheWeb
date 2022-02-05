@@ -5,7 +5,7 @@ const split_str = (str, separator) => {
 	while (match = separator.exec(str)) {
 		lastIndex = match.index + match[0].length;
 		if (lastIndex > lastLastIndex) {
-			if (lastLastIndex != match.index) {
+			if (lastLastIndex !== match.index) {
 				output.push(str.slice(lastLastIndex, match.index))
 			}
 			if (match.length > 1 && match.index < str.length) {
@@ -23,6 +23,12 @@ const split_str = (str, separator) => {
 	return output
 }
 const convertAbsoluteURL = (base_url, url) => {
+	if (url.match(/^\/\//)) {
+		let m = base_url.match(/^.*:/)
+		if (m) {
+			return `${m[0]}${url}`
+		}
+	}
 	if (base_url.match(/[^\/]$/)) {
 		base_url += "/"
 	}
@@ -39,11 +45,11 @@ const convertAbsoluteURL = (base_url, url) => {
 		rep = false
 		for (let i = 3; i < arr_url.length; ++i) {
 			const item = arr_url[i]
-			if (item == ".") {
+			if (item === ".") {
 				arr_url[i] = null
 				rep = true
 				break
-			} else if (item == "..") {
+			} else if (item === "..") {
 				arr_url[i] = null
 				if (i > 3) {
 					arr_url[i - 1] = null
@@ -60,16 +66,16 @@ const convertAbsoluteURL = (base_url, url) => {
 }
 const escape_mark = node => {
 	//try {
-	if (node.nodeType == 3) {
+	if (node.nodeType === 3) {
 		node.nodeValue = node.nodeValue.replace(/([\.・･]+)/ig,
 			(all, text) => {
 				if (text.length >= 2) {
 					let p = ""
-					if (text.length % 3 == 0) {
+					if (text.length % 3 === 0) {
 						for (let l = text.length / 3; l > 0; --l) {
 							p += "…"
 						}
-					} else if (text.length % 2 == 0) {
+					} else if (text.length % 2 === 0) {
 						for (let l = text.length / 2; l > 0; --l) {
 							p += "‥"
 						}
@@ -117,7 +123,7 @@ const escape_mark = node => {
 		).replace(/[ 　]+(」|』)/g, (all, p1) => p1
 		).replace(/\((笑)\)/g, (all, p1) => `（${p1}）`
 		)
-	} else if (node.tagName != "RT") {
+	} else if (node.tagName !== "RT") {
 		escape_mark_list(node.childNodes)
 	}
 }
@@ -128,12 +134,12 @@ const escape_mark_list = nodes => {
 }
 const get_tatechuuyoko_top_parent = node => {
 	if (node) {
-		if (node.nodeName == "#document" || node.className == "tatechuyoko_top") {
+		if (node.nodeName === "#document" || node.className === "tatechuyoko_top") {
 			return null
 		} else if (
-			node.tagName == "BODY"
-			|| node.tagName == "DIV"
-			|| node.tagName == "P"
+			node.tagName === "BODY"
+			|| node.tagName === "DIV"
+			|| node.tagName === "P"
 		) {
 			return node
 		}
@@ -142,8 +148,8 @@ const get_tatechuuyoko_top_parent = node => {
 	return null
 }
 const tatechuuyoko_num = node => {
-	if (node.nodeType == 3) {
-		if (node.parentNode.className == "tatechuyoko"
+	if (node.nodeType === 3) {
+		if (node.parentNode.className === "tatechuyoko"
 			|| !node.nodeValue.match(/([0-9,\.]+)/)) {
 			return 0
 		}
@@ -209,8 +215,8 @@ const tatechuuyoko_num_list = (nodes) => {
 	}
 }
 const tatechuuyoko_symbol = node => {
-	if (node.nodeType == 3) {
-		if (node.parentNode.className == "tatechuyoko"
+	if (node.nodeType === 3) {
+		if (node.parentNode.className === "tatechuyoko"
 			|| !node.nodeValue.match(/([‼‼︎！？⁈⁇⁉\!\?]+)/)) {
 			return
 		}
@@ -284,10 +290,10 @@ const convert_tatechuuyoko_num = doc => {
 }
 // 約物が連続した場合の文字間隔を調整
 const yakumono_space = node => {
-	if (node.nodeType == 3) {
+	if (node.nodeType === 3) {
 		//let re_yakumono_space = /([（〔「『［【〈《‘“）〕」』』］】〉》’”。．、，]+)/g
 		const re_yakumono_space = /([（〔「『［【〈《）〕」』］】〉》。．、，]+)/g
-		if (node.parentNode.className == "yakumo_spacing"
+		if (node.parentNode.className === "yakumo_spacing"
 			|| !node.nodeValue.match(re_yakumono_space)) {
 			return
 		}
@@ -332,9 +338,9 @@ const convert_ruby = doc => {
 	for (const item of doc.getElementsByTagName("ruby")) {
 		const rt_list = item.getElementsByTagName("rt") // ルビ文字   かんじ
 		let rb_list = item.getElementsByTagName("rb") // ルビベース 漢字
-		if (rb_list.length == 0) {
+		if (rb_list.length === 0) {
 			for (const node of item.childNodes) {
-				if (node.nodeType == 3) {
+				if (node.nodeType === 3) {
 					const e = doc.createElement("rb")
 					e.appendChild(node)
 					item.appendChild(e)
@@ -343,7 +349,7 @@ const convert_ruby = doc => {
 				}
 			}
 		}
-		if (rt_list.length == 1 && rb_list.length == 1) {
+		if (rt_list.length === 1 && rb_list.length === 1) {
 			let styles = {}
 			if (item.style instanceof String) {
 				for (const sl of item.style.split(";")) {
@@ -366,7 +372,7 @@ const convert_ruby = doc => {
 			} else {
 				const rt_height = rt_text.length
 				const rb_height = rb_text.length * 2
-				if (rt_height >= 2 && rt_text.length == rb_text.length) {
+				if (rt_height >= 2 && rt_text.length === rb_text.length) {
 					if (rt_text.match(/^・+$/)) {
 						item.setAttribute("rt-emphasis", "") // サイズを少し小さく 0.5 -> 0.4
 						styles["--rt-letter-spacing"] = `1.5em`
@@ -386,7 +392,7 @@ const convert_ruby = doc => {
 					styles["--rt-letter-spacing"] = `${sp}em`
 					styles["--rt-margin-top"] = `${sp / 2}em`
 					styles["--rt-margin-bottom"] = "0em" //`${sp / 2}em`
-				} else if (rt_height == 2 && rt_height < rb_height) {
+				} else if (rt_height === 2 && rt_height < rb_height) {
 					const sp = (rb_height / 2) // -1 = 上下のpadding(0.5em x 2) + rubyの分 1 *2
 					item.setAttribute("rt-spacing", "")
 					styles["--rt-letter-spacing"] = `${sp}em`
@@ -401,7 +407,7 @@ const convert_ruby = doc => {
 					styles["--rt-letter-spacing"] = `0em`
 					styles["--rt-margin-top"] = `-${sp}em`
 					styles["--rt-margin-bottom"] = `${sp / 2}em`
-				} else if (rt_height == 1 && rt_text.length == rb_text.length) {
+				} else if (rt_height === 1 && rt_text.length === rb_text.length) {
 					if (rt_text.match(/^・+$/)) {
 						item.setAttribute("rt-emphasis", "") // サイズを少し小さく 0.5 -> 0.4
 						item.setAttribute("data-ruby", rt_text.replace(/・/g, "﹅"))
@@ -427,7 +433,7 @@ const counterJapaneseHyphenation = doc => {
 	}
 	//const reNotPerStart = /^([(\)\[）〕」』］】〉》’”。．、，]+)/
 	//const reNotPerEnd = /([\(\[（〔「『［【〈《‘“]+$)/
-	const reNotPerStart = /^([,\)\]｝、〕〉》」』】〙〗〟’”．，｠»ゝゞーァィゥェォッャュョヮヵヶぁぃぅぇぉっゃゅょゎゕゖㇰㇱㇲㇳㇴㇵㇶㇷㇸㇹㇷ゚ㇺㇻㇼㇽㇾㇿ々〻\-\‐゠–〜～\?!‼⁇⁈⁉・:;\/。.]+)/
+	const reNotPerStart = /^([,\)\]｝、）〕〉》」』】〙〗〟’”．，｠»ゝゞーァィゥェォッャュョヮヵヶぁぃぅぇぉっゃゅょゎゕゖㇰㇱㇲㇳㇴㇵㇶㇷㇸㇹㇷ゚ㇺㇻㇼㇽㇾㇿ々〻\-\‐゠–〜～\?!‼⁇⁈⁉・:;\/。.]+)/
 	const reNotPerEnd = /([\(\[（｛〔〈《「『【〘〖〝‘“｟«]+$)/
 	for (const el of nodes) {
 		const previousNode = el.previousSibling
@@ -435,20 +441,21 @@ const counterJapaneseHyphenation = doc => {
 		let nextMoveNode = null
 		let previousText = ""
 		let nextText = ""
-		if (previousNode && previousNode.nodeType == 3 && previousNode.nodeValue.match(reNotPerEnd)) {
-			previousText = RegExp.$1
+		let m = null
+		if (previousNode && previousNode.nodeType === 3 && (m = previousNode.nodeValue.match(reNotPerEnd))) {
+			previousText = m[1] // RegExp.$1
 			previousNode.nodeValue = previousNode.nodeValue.replace(reNotPerEnd, "")
 		}
-		if (nextNode && nextNode.nodeType == 3 && nextNode.nodeValue.match(reNotPerStart)) {
-			nextText = RegExp.$1
+		if (nextNode && nextNode.nodeType === 3 && (m = nextNode.nodeValue.match(reNotPerStart))) {
+			nextText = m[1] // RegExp.$1
 			nextNode.nodeValue = nextNode.nodeValue.replace(reNotPerStart, "")
-		} else if (nextNode && nextNode.nodeType == 1 && nextNode.className == "yakumono_spacing") {
+		} else if (nextNode && nextNode.nodeType === 1 && nextNode.className === "yakumono_spacing") {
 			nextMoveNode = nextNode
 		}
 		if (previousText.length == 0 && el.className == "tatechuyoko"
 			&& el.innerText.match(/[‼‼︎！？⁈⁇⁉\!\?]/)
-			&& previousNode && previousNode.nodeType == 3 && previousNode.nodeValue.match(/(.[,\)\]｝、〕〉》」』】〙〗〟’”．，｠»ゝゞーァィゥェォッャュョヮヵヶぁぃぅぇぉっゃゅょゎゕゖㇰㇱㇲㇳㇴㇵㇶㇷㇸㇹㇷ゚ㇺㇻㇼㇽㇾㇿ々〻\-\‐゠–〜～\?!‼⁇⁈⁉・:;\/。.]*$)/)) {
-			previousText = RegExp.$1
+			&& previousNode && previousNode.nodeType === 3 && (m = previousNode.nodeValue.match(/(.[,\)\]｝、）〕〉》」』】〙〗〟’”．，｠»ゝゞーァィゥェォッャュョヮヵヶぁぃぅぇぉっゃゅょゎゕゖㇰㇱㇲㇳㇴㇵㇶㇷㇸㇹㇷ゚ㇺㇻㇼㇽㇾㇿ々〻\-\‐゠–〜～\?!‼⁇⁈⁉・:;\/。.]*$)/))) {
+			previousText = m[1] // RegExp.$1
 			previousNode.nodeValue = previousNode.nodeValue.slice(0, -previousText.length)
 		}
 		if (previousText.length > 0 || nextText.length > 0 || nextMoveNode) {

@@ -768,6 +768,45 @@ p {
     color: #333;
 }
 
+.show-favorite tr.loading th {
+    position: relative;
+}
+
+.show-favorite tr.loading th::before {
+    content: "";
+    width: 2rem;
+    height: 2rem;
+    border-radius: 1.6rem;
+    border: 0.2rem solid rgba(200, 200, 200, 0.3);
+    border-top-color: rgba(255, 120, 0, 0.8);
+    box-sizing: border-box;
+    top: 30%;
+    left: 30%;
+    position: absolute;
+    margin-top: -0.2rem;
+    margin-left: -0.2rem;
+    animation: loading 1.2s linear infinite;
+    -webkit-animation: loading 1.2s linear infinite;
+}
+
+@keyframes loading {
+    0% {
+        transform: rotate(0deg)
+    }
+    100% {
+        transform: rotate(360deg)
+    }
+}
+
+@-webkit-keyframes loading {
+    0% {
+        -webkit-transform: rotate(0deg)
+    }
+    100% {
+        -webkit-transform: rotate(360deg)
+    }
+}
+
 .show-favorite table.sticky_table tbody th:first-child {
     /* 横スクロール時に固定する */
     position: -webkit-sticky;

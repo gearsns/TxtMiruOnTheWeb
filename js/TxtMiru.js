@@ -1,10 +1,10 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.10.0'
-import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.10.0'
-import { TxtMiruLocalFile } from './TxtMiruLocalFile.js?1.0.10.0'
-import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.10.0'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.10.0'
-import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.10.0'
-import { TxtMiruDB } from './TxtMiruDB.js?1.0.10.0'
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.11.0'
+import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.11.0'
+import { TxtMiruLocalFile } from './TxtMiruLocalFile.js?1.0.11.0'
+import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.11.0'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.11.0'
+import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.11.0'
+import { TxtMiruDB } from './TxtMiruDB.js?1.0.11.0'
 
 const TxtMiruTitle = "TxtMiru on the Web"
 // DOM
@@ -162,6 +162,7 @@ export class TxtMiru {
 		return this.txtMiruDB.setSetting(item_list)
 	}
 	//
+	clearCache = () => this.cache_list.length = 0
 	getCache = () => this.cache_list
 	addCache = item => {
 		for(let i=0, l = this.cache_list.length; i<l; ++i){

@@ -1,7 +1,7 @@
-import { TxtMiruLib } from './TxtMiruLib.js?1.0.11.0'
+import { TxtMiruLib } from './TxtMiruLib.js?1.0.12.0'
 import fetchJsonp from './lib/fetch-jsonp.js'
-import { narou2html } from './lib/narou.js?1.0.11.0'
-import { AozoraText2Html } from './lib/aozora.js?1.0.11.0'
+import { narou2html } from './lib/narou.js?1.0.12.0'
+import { AozoraText2Html } from './lib/aozora.js?1.0.12.0'
 
 const appendSlash = text => {
 	if (!text.match(/\/$/)) {
@@ -340,7 +340,7 @@ const epubIndex = async (txtMiru, index_url, cache) => {
 							let toc_flag = false
 							for (const itemref of opf_xml.getElementsByTagName("spine")) {
 								const toc = itemref.getAttribute("properties")
-								if(toc === "nav"){
+								if (toc === "nav") {
 									toc_flag = true
 								}
 							}
@@ -348,7 +348,7 @@ const epubIndex = async (txtMiru, index_url, cache) => {
 							for (const itemref of opf_xml.getElementsByTagName("itemref")) {
 								const id = itemref.getAttribute("idref")
 								const e = opf_xml.getElementById(id)
-								if(e){
+								if (e) {
 									toc_array.push(
 										{
 											href: e.getAttribute("href")
@@ -2035,3 +2035,197 @@ class Pixiv extends TxtMiruSitePlugin {
 	Name = () => "pixiv"
 }
 TxtMiruSiteManager.AddSite(new Pixiv())
+
+class NovelupPlus extends TxtMiruSitePlugin {
+	Match = url => url.match(/https:\/\/novelup\.plus/)
+	GetDocument = (txtMiru, url) => {
+		let req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
+			url: url,
+			charset: "UTF-8"
+		})}`
+		return fetch(req_url, null)
+			.then(response => response.text())
+			.then(text => {
+				let doc = TxtMiruLib.HTML2Document(text)
+				document.title = doc.title
+				TxtMiruLib.KumihanMod(url, doc)
+
+				let item = {
+					className: "NovelupPlus",
+					"next-episode-text": "次へ",
+					"prev-episode-text": "前へ",
+					"episode-index-text": "小説投稿サイトノベルアップ＋",
+					"episode-index": "https://novelup.plus/"
+				}
+				let m_index_url = url.match(/https:\/\/novelup\.plus\/story\/[\d]+(.*)/)
+				if (m_index_url && m_index_url[1]) {
+					for (let e of doc.getElementsByClassName("novel_title")) {
+						item["episode-index-text"] = e.innerText
+						item["episode-index"] = m_index_url[0]
+					}
+				}
+				for(let anchor of doc.getElementsByTagName("A")){
+					if(anchor.innerText.match(/次へ/)){
+						item["next-episode"] = anchor.href
+						item["next-episode-text"] = "次へ"
+					} else if(anchor.innerText.match(/前へ/)){
+						item["prev-episode"] = anchor.href
+						item["prev-episode-text"] = "前へ"
+					}
+				}
+				for (let el of doc.getElementsByClassName("widget-toc-episode-datePublished")) {
+					for (let el_span of el.getElementsByTagName("SPAN")) {
+						let m_date = el_span.innerText.match(/([0-9]+)年([0-9]+)月([0-9]+)日/)
+						if (m_date) {
+							el_span.innerText = `${m_date[1]}年${("0" + m_date[2]).slice(-2)}月${("0" + m_date[3]).slice(-2)}日`.replace(/[0-9]/g, s => {
+								return String.fromCharCode(s.charCodeAt(0) + 0xFEE0)
+							})
+						}
+					}
+				}
+				let title = ""
+				for (let el_a of doc.getElementsByTagName("A")) {
+					const href = el_a.getAttribute("href") || ""
+					if (!href.match(/^http/)) {
+						el_a.href = TxtMiruLib.ConvertAbsoluteURL(url, href) //`https://kakuyomu.jp${href}`
+					}
+					if (el_a.getAttribute("data-link-click-action-name") == "WorksEpisodesEpisodeHeaderPreviousEpisode") {
+						item["prev-episode"] = el_a.href
+						item["prev-episode-text"] = el_a.innerHTML
+						el_a.style.display = "none"
+					} else if (el_a.getAttribute("data-link-click-action-name") == "WorksEpisodesEpisodeFooterNextEpisode") {
+						item["next-episode"] = el_a.href
+						item["next-episode-text"] = el_a.innerHTML
+						el_a.style.display = "none"
+					} else if (el_a.getAttribute("itemprop") == "item") {
+						item["episode-index"] = el_a.href
+						item["episode-index-text"] = "目次へ"
+						title = `<a class="kakuyomu_title" href="${el_a.href}">${el_a.getAttribute("title")}</a>`
+						el_a.style.display = "none"
+					}
+				}
+				item["html"] = title + doc.body.innerHTML
+				return item
+			})
+			.catch(err => {
+				return err
+			})
+	}
+	GetInfo = async (txtMiru, url, callback = null) => {
+		if (Array.isArray(url)) {
+			let results = []
+			for (let u of url) {
+				if (this.Match(u)) {
+					let item = await this.GetInfo(txtMiru, u, callback)
+					if (item != null) {
+						results.push(item)
+					}
+				}
+			}
+			return results
+		} else if (this.Match(url)) {
+			if (callback) {
+				callback([url])
+			}
+			let index_url = ""
+			url = appendSlash(url)
+			let m_index_url = url.match(/(https:\/\/novelup\.plus\/story\/.*?)\//)
+			if (m_index_url) {
+				index_url = m_index_url[1]
+			} else {
+				return null
+			}
+			let req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
+				url: `${index_url}`,
+				charset: "UTF-8"
+			})}`
+			let html = await fetch(req_url)
+				.then(response => response.text())
+				.then(text => text)
+			let parser = new DOMParser()
+			let doc = parser.parseFromString(html, "text/html")
+			let max_page = 1
+			let title = doc.titie
+			let author = doc.titie
+			for (let e of doc.getElementsByClassName("read_time")) {
+				let m = e.innerText.match(/エピソード数：([\d]+)/)
+				if (m) {
+					max_page = parseInt(m[1])
+				}
+			}
+			for (let e of doc.getElementsByClassName("novel_title")) {
+				title = e.innerText
+			}
+			for (let e of doc.getElementsByClassName("novel_author")) {
+				author = e.innerText
+			}
+			return {
+				url: removeSlash(url),
+				max_page: max_page,
+				name: title,
+				author: author
+			}
+		}
+		return null
+	}
+	GetPageNo = async (txtMiru, url) => {
+		if (this.Match(url)) {
+			url = appendSlash(url)
+			let m_url = url.match(/(https:\/\/novelup\.plus\/story\/[\d]+)\/([\d]+)\/$/)
+			if (m_url) {
+				let page_url = m_url[2]
+				let index_url = m_url[1]
+				let page_no = 0
+				let url_page = 1
+				while (true) {
+					let bMatchUrl = false
+					let req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
+						url: url_page == 1 ? `${index_url}` : `${index_url}?p=${url_page}`,
+						charset: "UTF-8"
+					})}`
+					let html = await fetch(req_url)
+						.then(response => response.text())
+						.then(text => text)
+					let parser = new DOMParser()
+					let doc = parser.parseFromString(html, "text/html")
+					for (let e of doc.getElementsByClassName("episode_link")) {
+						for(let anchor of e.getElementsByTagName("A")){
+							++page_no
+							if (anchor.href.includes(page_url)) {
+								bMatchUrl = true
+								break
+							}
+							break
+						}
+						if(bMatchUrl){
+							break
+						}
+					}
+					if(bMatchUrl){
+						break
+					}
+					// 目次 次のページ取得
+					bMatchUrl = true
+					url_page++
+					let next_url = `?p=${url_page}`
+					for(let anchor of doc.getElementsByTagName("A")){
+						if(anchor.href.includes(next_url)){
+							bMatchUrl = false
+							break
+						}
+					}
+					if(bMatchUrl){
+						break
+					}
+				}
+				console.log(page_no)
+				return { url: removeSlash(url), page_no: page_no, index_url: index_url }
+			} else if (url.match(/https:\/\/kakuyomu\.jp\/works\/[^\/]+\/$/)) {
+				return { url: removeSlash(url), page_no: 0, index_url: removeSlash(url) }
+			}
+		}
+		return null
+	}
+	Name = () => "小説投稿サイトノベルアップ＋"
+}
+TxtMiruSiteManager.AddSite(new NovelupPlus())

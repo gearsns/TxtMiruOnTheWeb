@@ -1815,7 +1815,84 @@ button.goto2:hover {
     text-orientation: sideways;
 }
 
+.NovelupPlus .login,
+.NovelupPlus .sub_navi,
+.NovelupPlus #alternative_header,
+.NovelupPlus .sns_set,
+.NovelupPlus .footer-nav,
+.NovelupPlus #section_suggest_list,
+.NovelupPlus #footer,
+.NovelupPlus #story_episode_toolbar,
+.NovelupPlus .scroll-top
+{
+    display: none;
+}
 
+.NovelupPlus p
+{
+    white-space: pre-wrap;
+}
+
+.NovelupPlus .episode_list ul
+{
+    list-style: none;
+    padding-inline-start: unset;
+}
+
+.NovelupPlus .episode_list li
+{
+    border-left: 1px solid #ddddd0;
+}
+
+.NovelupPlus .episode_list .chapter
+{
+    border: none;
+    padding-top: 0.8em;
+    padding-right: 1.2em;
+    padding-left: 1.2em;
+    font-weight: bold;
+    background: #eeeee2;
+}
+
+.NovelupPlus .episode_list .chapter cite
+{
+    font-style: normal;
+}
+
+.NovelupPlus .episode_list .update_date,
+.NovelupPlus .episode_list .comment_link,
+.NovelupPlus .episode_list p
+{
+    text-align: right;
+    white-space: normal;
+}
+.NovelupPlus .episode_list .comment_link p
+{
+    float: right;
+    margin-inline-start: 2rem;
+}
+.NovelupPlus .episode_title h1
+{
+    font-size: 1em;
+}
+
+.NovelupPlus .novel_title
+{
+    font-size: 1.2em;
+    font-weight: bold;
+}
+.NovelupPlus .novel_author p
+{
+    text-align: right;
+}
+.NovelupPlus .move_set div
+{
+    margin-inline-end: 2rem;
+}
+.NovelupPlus .move_set
+{
+   display: flex;
+}
 /**/
 
 @media screen and (max-height:600px) {

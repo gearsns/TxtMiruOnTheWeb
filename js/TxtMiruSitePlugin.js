@@ -1917,10 +1917,10 @@ class Pixiv extends TxtMiruSitePlugin {
 						html_arr.push(`<h3>目次</h3><ol class="novel-toc-items">`)
 						do {
 							const json = await this.novelAPI(txtMiru, `https://www.pixiv.net/ajax/novel/series_content/${id}?limit=10&last_order=${order}&order_by=asc&lang=ja`)
-							if (json.body["seriesContents"].length <= 0) {
+							if (json.body.page["seriesContents"].length <= 0) {
 								break
 							}
-							for (const series_content of json.body["seriesContents"]) {
+							for (const series_content of json.body.page["seriesContents"]) {
 								let date = new Date()
 								date.setTime(series_content.reuploadTimestamp * 1000)
 								const date_str = date.getFullYear() + "年" + (date.getMonth() + 1) + "月" + date.getDate() + "日"

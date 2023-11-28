@@ -1,7 +1,7 @@
-import { TxtMiruLib } from './TxtMiruLib.js?1.0.12.0'
+import { TxtMiruLib } from './TxtMiruLib.js?1.0.13.0'
 import fetchJsonp from './lib/fetch-jsonp.js'
-import { narou2html } from './lib/narou.js?1.0.12.0'
-import { AozoraText2Html } from './lib/aozora.js?1.0.12.0'
+import { narou2html } from './lib/narou.js?1.0.13.0'
+import { AozoraText2Html } from './lib/aozora.js?1.0.13.0'
 
 const appendSlash = text => {
 	if (!text.match(/\/$/)) {
@@ -645,14 +645,14 @@ TxtMiruSiteManager.AddSite(new Narou())
 class Kakuyomu extends TxtMiruSitePlugin {
 	Match = url => url.match(/https:\/\/kakuyomu\.jp/)
 	GetDocument = (txtMiru, url) => {
-		let req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
+		const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
 			url: url,
 			charset: "UTF-8"
 		})}`
 		return fetch(req_url, null)
 			.then(response => response.text())
 			.then(text => {
-				let doc = TxtMiruLib.HTML2Document(text)
+				const doc = TxtMiruLib.HTML2Document(text)
 				document.title = doc.title
 				TxtMiruLib.KumihanMod(url, doc)
 
@@ -665,8 +665,9 @@ class Kakuyomu extends TxtMiruSitePlugin {
 				}
 				for (let el of doc.getElementsByClassName("widget-toc-episode-datePublished")) {
 					for (let el_span of el.getElementsByTagName("SPAN")) {
-						if (el_span.innerText.match(/([0-9]+)年([0-9]+)月([0-9]+)日/)) {
-							el_span.innerText = `${RegExp.$1}年${("0" + RegExp.$2).slice(-2)}月${("0" + RegExp.$3).slice(-2)}日`.replace(/[0-9]/g, s => {
+						const m = el_span.innerText.match(/([0-9]+)年([0-9]+)月([0-9]+)日/)
+						if (m && m.length > 0) {
+							el_span.innerText = `${m[1]}年${("0" + m[2]).slice(-2)}月${("0" + m[3]).slice(-2)}日`.replace(/[0-9]/g, s => {
 								return String.fromCharCode(s.charCodeAt(0) + 0xFEE0)
 							})
 						}
@@ -705,7 +706,7 @@ class Kakuyomu extends TxtMiruSitePlugin {
 			let results = []
 			for (let u of url) {
 				if (this.Match(u)) {
-					let item = await this.GetInfo(txtMiru, u, callback)
+					const item = await this.GetInfo(txtMiru, u, callback)
 					if (item != null) {
 						results.push(item)
 					}
@@ -718,25 +719,64 @@ class Kakuyomu extends TxtMiruSitePlugin {
 			}
 			let index_url = ""
 			url = appendSlash(url)
-			if (url.match(/(https:\/\/kakuyomu\.jp\/works\/.*?)\//)) {
-				index_url = RegExp.$1
+			const m = url.match(/(https:\/\/kakuyomu\.jp\/works\/.*?)\//)
+			if (m && m.length > 0) {
+				index_url = m[1]
 			} else {
 				return null
 			}
-			let req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
+			const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
 				url: `${index_url}`,
 				charset: "UTF-8"
 			})}`
-			let html = await fetch(req_url)
+			const html = await fetch(req_url)
 				.then(response => response.text())
 				.then(text => text)
-			let parser = new DOMParser()
-			let doc = parser.parseFromString(html, "text/html")
+			const parser = new DOMParser()
+			const doc = parser.parseFromString(html, "text/html")
+			let max_page = 1
+			let title = ""
+			let author = ""
+			try {
+				max_page = doc.getElementsByClassName("widget-toc-episode-titleLabel").length
+				title = doc.getElementById("workTitle").innerText
+				author = doc.getElementById("workAuthor-activityName").innerText
+			} catch (e) {
+
+			}
+			try {
+				var script_data = doc.getElementById("__NEXT_DATA__");
+				if (script_data) {
+					let base_name = ""
+					const m0 = index_url.match(/works\/(.*)/)
+					if(m0 && m0.length > 0){
+						base_name = m0[1]
+					}
+					const json = JSON.parse(script_data.innerHTML)
+					const apollo_state = json["props"]["pageProps"]["__APOLLO_STATE__"]
+					const root_query = apollo_state["ROOT_QUERY"]
+					const top_work_id = root_query["work({\"id\":\"" + base_name + "\"})"]["__ref"]
+					const top_work = apollo_state[top_work_id];
+					author = apollo_state[top_work["author"]["__ref"]]["activityName"]
+					title = top_work["title"];
+					const tableOfContents = top_work["tableOfContents"]
+					max_page = 0
+					for (const i = 0; i < tableOfContents.length; ++i) {
+						const subTableOfContents = apollo_state[tableOfContents[i]["__ref"]];
+						const episodes = subTableOfContents["episodes"]
+						if (episodes) {
+							max_page += episodes.length
+						}
+					}
+				}
+			} catch (e) {
+
+			}
 			return {
 				url: removeSlash(url),
-				max_page: doc.getElementsByClassName("widget-toc-episode-titleLabel").length,
-				name: doc.getElementById("workTitle").innerText,
-				author: doc.getElementById("workAuthor-activityName").innerText
+				max_page: max_page,
+				name: title,
+				author: author
 			}
 		}
 		return null
@@ -744,18 +784,19 @@ class Kakuyomu extends TxtMiruSitePlugin {
 	GetPageNo = async (txtMiru, url) => {
 		if (this.Match(url)) {
 			url = appendSlash(url)
-			if (url.match(/(https:\/\/kakuyomu\.jp\/works\/.*?)\/(episodes\/.*)\/$/)) {
-				let page_url = RegExp.$2
-				let index_url = RegExp.$1
-				let req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
+			const m = url.match(/(https:\/\/kakuyomu\.jp\/works\/.*?)\/(episodes\/.*)\/$/)
+			if (m && m.length > 0) {
+				const page_url = m[2]
+				const index_url = m[1]
+				const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
 					url: `${url}episode_sidebar`,
 					charset: "UTF-8"
 				})}`
-				let html = await fetch(req_url)
+				const html = await fetch(req_url)
 					.then(response => response.text())
 					.then(text => text)
-				let parser = new DOMParser()
-				let doc = parser.parseFromString(html, "text/html")
+				const parser = new DOMParser()
+				const doc = parser.parseFromString(html, "text/html")
 				let page_no = 0
 				for (let anchor of doc.getElementsByClassName("widget-toc-episode-episodeTitle")) {
 					++page_no
@@ -2064,11 +2105,11 @@ class NovelupPlus extends TxtMiruSitePlugin {
 						item["episode-index"] = m_index_url[0]
 					}
 				}
-				for(let anchor of doc.getElementsByTagName("A")){
-					if(anchor.innerText.match(/次へ/)){
+				for (let anchor of doc.getElementsByTagName("A")) {
+					if (anchor.innerText.match(/次へ/)) {
 						item["next-episode"] = anchor.href
 						item["next-episode-text"] = "次へ"
-					} else if(anchor.innerText.match(/前へ/)){
+					} else if (anchor.innerText.match(/前へ/)) {
 						item["prev-episode"] = anchor.href
 						item["prev-episode-text"] = "前へ"
 					}
@@ -2189,7 +2230,7 @@ class NovelupPlus extends TxtMiruSitePlugin {
 					let parser = new DOMParser()
 					let doc = parser.parseFromString(html, "text/html")
 					for (let e of doc.getElementsByClassName("episode_link")) {
-						for(let anchor of e.getElementsByTagName("A")){
+						for (let anchor of e.getElementsByTagName("A")) {
 							++page_no
 							if (anchor.href.includes(page_url)) {
 								bMatchUrl = true
@@ -2197,24 +2238,24 @@ class NovelupPlus extends TxtMiruSitePlugin {
 							}
 							break
 						}
-						if(bMatchUrl){
+						if (bMatchUrl) {
 							break
 						}
 					}
-					if(bMatchUrl){
+					if (bMatchUrl) {
 						break
 					}
 					// 目次 次のページ取得
 					bMatchUrl = true
 					url_page++
 					let next_url = `?p=${url_page}`
-					for(let anchor of doc.getElementsByTagName("A")){
-						if(anchor.href.includes(next_url)){
+					for (let anchor of doc.getElementsByTagName("A")) {
+						if (anchor.href.includes(next_url)) {
 							bMatchUrl = false
 							break
 						}
 					}
-					if(bMatchUrl){
+					if (bMatchUrl) {
 						break
 					}
 				}

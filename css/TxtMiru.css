@@ -1191,8 +1191,12 @@ button.goto2:hover {
 .Kakuyomu .contentMain-pagerArrow,
 .Kakuyomu #workMeta,
 .Kakuyomu .widget-internalLinks,
-.Kakuyomu .ui-truncateTextButton-expandButton {
-    display: none;
+.Kakuyomu .ui-truncateTextButton-expandButton,
+.Kakuyomu .RegularMediaGlobalHeader_regularGlobalHeader__hFOw3,
+.Kakuyomu .Button_button__kcHya,
+.Kakuyomu .ModelessMessageBox_isRegular__aFp9H
+{
+    display: none !important;
 }
 
 .Kakuyomu {

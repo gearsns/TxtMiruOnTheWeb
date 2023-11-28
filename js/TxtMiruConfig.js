@@ -1,4 +1,4 @@
-import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.12.0"
+import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.13.0"
 
 export class TxtMiruConfig {
 	constructor(txtMiru) {

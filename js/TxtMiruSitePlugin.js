@@ -1,7 +1,7 @@
-import { TxtMiruLib } from './TxtMiruLib.js?1.0.13.0'
+import { TxtMiruLib } from './TxtMiruLib.js?1.0.13.1'
 import fetchJsonp from './lib/fetch-jsonp.js'
-import { narou2html } from './lib/narou.js?1.0.13.0'
-import { AozoraText2Html } from './lib/aozora.js?1.0.13.0'
+import { narou2html } from './lib/narou.js?1.0.13.1'
+import { AozoraText2Html } from './lib/aozora.js?1.0.13.1'
 
 const appendSlash = text => {
 	if (!text.match(/\/$/)) {
@@ -763,7 +763,7 @@ class Kakuyomu extends TxtMiruSitePlugin {
 					max_page = 0
 					for (const i = 0; i < tableOfContents.length; ++i) {
 						const subTableOfContents = apollo_state[tableOfContents[i]["__ref"]];
-						const episodes = subTableOfContents["episodes"]
+						const episodes = subTableOfContents["episodeUnions"]
 						if (episodes) {
 							max_page += episodes.length
 						}

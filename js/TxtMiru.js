@@ -1,10 +1,10 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.13.1'
-import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.13.1'
-import { TxtMiruLocalFile } from './TxtMiruLocalFile.js?1.0.13.1'
-import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.13.1'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.13.1'
-import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.13.1'
-import { TxtMiruDB } from './TxtMiruDB.js?1.0.13.1'
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.14.0'
+import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.14.0'
+import { TxtMiruLocalFile } from './TxtMiruLocalFile.js?1.0.14.0'
+import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.14.0'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.14.0'
+import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.14.0'
+import { TxtMiruDB } from './TxtMiruDB.js?1.0.14.0'
 
 const TxtMiruTitle = "TxtMiru on the Web"
 // DOM
@@ -27,13 +27,18 @@ const retrieveCharactersRects = elem => {
 	if (elem.nodeType == elem.TEXT_NODE) {
 		const range = elem.ownerDocument.createRange()
 		range.selectNodeContents(elem)
-		for (let current_pos = 0, end_pos = range.endOffset; current_pos + 1 < end_pos; ++current_pos) {
-			range.setStart(elem, current_pos)
-			range.setEnd(elem, current_pos + 1)
-			results.push({
-				character: range.toString(),
-				rect: range.getBoundingClientRect()
-			})
+		range.setStart(elem, 0)
+		range.setEnd(elem, range.endOffset)
+		let r = range.getBoundingClientRect()
+		if(r.x > -100 && r.height > 0 && r.width > 0 && r.x <= window.innerWidth + 50){
+			for (let current_pos = 0, end_pos = range.endOffset; current_pos < end_pos; ++current_pos) {
+				range.setStart(elem, current_pos)
+				range.setEnd(elem, current_pos + 1)
+				results.push({
+					character: range.toString(),
+					rect: range.getBoundingClientRect()
+				})
+			}
 		}
 		range.detach()
 		return results
@@ -54,14 +59,16 @@ export class TxtMiru {
 	display_popup = false
 	cache_list = []
 	default_setting = {
-		"WebServerUrl": "https://script.google.com/macros/s/AKfycbxf6f5omc-p0kTdmyPh92wdpXv9vfQBqa9HJYtypTGD5N5Aqf5S5CWf-yQ6x6sIj4pf3g/exec"
+		"WebServerUrl": "https://script.google.com/macros/s/AKfycbxf6f5omc-p0kTdmyPh92wdpXv9vfQBqa9HJYtypTGD5N5Aqf5S5CWf-yQ6x6sIj4pf3g/exec",
+		"delay-set-scroll-pos-state": 500,
+		"page-scroll-effect-animation": true,
 	}
-	setting = {...this.default_setting}
+	setting = { ...this.default_setting }
 
 	constructor(main_id) {
 		this.mainElement = document.getElementById(main_id)
 		this.mainElement.setAttribute("tabindex", 1)
-		this.mainElement.innerHTML = `<div class="prev-episode"></div><div id="contents" class="contents"><p style="width:100vw"></p></div><div class="next-episode"></div>`
+		this.mainElement.innerHTML = `<div id="TxtMiruPageEffect"></div><div class="prev-episode"></div><div id="contents" class="contents"><p style="width:100vw"></p></div><div class="next-episode"></div>`
 		this.contentsElement = document.getElementById("contents")
 		//
 		this.txtMiruDB = new TxtMiruDB(this)
@@ -122,18 +129,18 @@ export class TxtMiru {
 	txtmiru_websocket = null
 	setupWebsock = url => {
 		try {
-			if(this.txtmiru_websocket){
+			if (this.txtmiru_websocket) {
 				this.txtmiru_websocket.close()
 			}
 			this.txtmiru_websocket = null
-			if(!url || url.length == 0){
+			if (!url || url.length == 0) {
 				return
 			}
 			let sock = new WebSocket(url)
 			sock.addEventListener("message", e => {
 				try {
 					let item = JSON.parse(e.data)
-					if(item.url){
+					if (item.url) {
 						const url = item.url.replace(/(#.*$)/, "")
 						const name = RegExp.$1
 						item.url = url
@@ -142,12 +149,12 @@ export class TxtMiru {
 					} else {
 						this.addCache(item)
 					}
-				} catch{}
+				} catch { }
 			})
 			sock.addEventListener("close", this.txtmiru_websocket = null)
 			this.txtmiru_websocket = sock
 			sock.addEventListener("open", e => {
-				this.txtmiru_websocket.send(JSON.stringify({reload: true}))
+				this.txtmiru_websocket.send(JSON.stringify({ reload: true }))
 			})
 		} catch {
 			this.txtmiru_websocket = null
@@ -165,8 +172,8 @@ export class TxtMiru {
 	clearCache = () => this.cache_list.length = 0
 	getCache = () => this.cache_list
 	addCache = item => {
-		for(let i=0, l = this.cache_list.length; i<l; ++i){
-			if(item.url && this.cache_list[i].url == item.url){
+		for (let i = 0, l = this.cache_list.length; i < l; ++i) {
+			if (item.url && this.cache_list[i].url == item.url) {
 				this.cache_list[i] = item
 				return
 			}
@@ -176,6 +183,79 @@ export class TxtMiru {
 	///////////////////////////////
 	// ページ移動
 	// アニメーションでスクロール
+	scrollPageEffect = nextDir => {
+		const el_effect = document.getElementById("TxtMiruPageEffect")
+		el_effect.style.display = "none"
+		const el = this.mainElement
+		let maxCount = window.innerWidth
+		const right = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--sal"))
+		if (nextDir) {
+			if (maxCount + maxCount - el.scrollLeft > el.scrollWidth) {
+				maxCount = el.scrollWidth - maxCount + el.scrollLeft
+			}
+		} else {
+			maxCount -= right
+			if (-el.scrollLeft < maxCount) {
+				maxCount = -el.scrollLeft
+			}
+		}
+		//
+		if (nextDir) {
+			const abl_pos = cumulativeOffset(el_effect)
+			const targets = new Set()
+			for (let x = 0; x < 3; x++) {
+				for (let i = 0; i < el.clientHeight; i += 10) {
+					const t = document.elementsFromPoint(right + x, abl_pos.top + i)
+					if (t.length >= 3 && el.contains(t[0])) {
+						targets.add(t[0])
+						break
+					}
+				}
+			}
+			// rt: ruby-position : over, under underは左側
+			let offset = 0
+			for (let item of targets) {
+				let check_right = right
+				if (item.tagName == "RT") {
+					for (const ch of retrieveCharactersRects(item)) {
+						const item_right = ch.rect.right
+						if (ch.rect.left < right && right < item_right) {
+							check_right += ch.rect.left
+							break
+						}
+					}
+				}
+				do {
+					if (item.tagName == "RT" || item.tagName == "RB" || item.tagName == "RUBY") {
+						item = item.parentNode
+					} else {
+						break
+					}
+				} while (true)
+				for (const ch of retrieveCharactersRects(item)) {
+					const item_right = ch.rect.right + ch.rect.width / 5 //2.3
+					if (ch.rect.left < check_right && check_right < ch.rect.right) {
+						if (offset < item_right - right) {
+							offset = item_right - right
+						}
+					}
+				}
+			}
+			maxCount -= right
+			maxCount -= offset
+			maxCount *= -1
+		}
+		//
+		if (Math.abs(maxCount) > 1) {
+			if (this.setting["page-scroll-effect-animation"]) {
+				el_effect.style.display = "block"
+				el_effect.className = el_effect.className == 'fadeInAnime1' ? 'fadeInAnime2' : 'fadeInAnime1'
+			}
+			el_effect.style.left = (el.scrollLeft + maxCount) + "px"
+			el.scrollBy({ left: maxCount, behavior: "smooth" })
+		}
+	}
+
 	scrollToAnim = scroll_last => {
 		const el = this.mainElement
 		const height = scroll_last - el.scrollLeft
@@ -186,7 +266,7 @@ export class TxtMiru {
 			this.restartScrollTimeout()
 			if (index < count) {
 				++index
-				el.scrollBy(scroll_step, 0)
+				el.scrollBy({left: scroll_step})
 				requestAnimationFrame(loop)
 			} else {
 				if (height < 0) {
@@ -212,25 +292,13 @@ export class TxtMiru {
 	}
 	//
 	pagePrev = () => {
-		if (this.scroll_timer_id) {
-			clearTimeout(this.scroll_timer_id)
-		}
-		const el = this.mainElement
-		this.scrollToAnim(el.scrollLeft + el.clientWidth)
-		this.scroll_timer_func = this.fixPagePrev
-		this.scroll_timer_id = setTimeout(this.fixPagePrev, 100)
+		this.scrollPageEffect(false)
 	}
 	pageNext = () => {
-		if (this.scroll_timer_id) {
-			clearTimeout(this.scroll_timer_id)
-		}
-		const el = this.mainElement
-		this.scrollToAnim(el.scrollLeft - el.clientWidth)
-		this.scroll_timer_func = this.fixPageNext
-		this.scroll_timer_id = setTimeout(this.fixPageNext, 100)
+		this.scrollPageEffect(true)
 	}
-	pageTop = () => this.scrollToAnim(this.mainElement.scrollWidth)
-	pageEnd = () => this.scrollToAnim(-this.mainElement.scrollWidth)
+	pageTop = () => this.mainElement.scrollTo({ left: this.mainElement.scrollWidth, behavior: "smooth"})
+	pageEnd = () => this.mainElement.scrollTo({ left: -this.mainElement.scrollWidth, behavior: "smooth"})
 	//
 	gotoAttributeUrl = name => {
 		const el = this.contentsElement
@@ -245,57 +313,26 @@ export class TxtMiru {
 	gotoPrevEpisode = () => this.gotoAttributeUrl("prev-episode")
 	gotoIndex = () => this.gotoAttributeUrl("episode-index")
 	//
-	fixPagePrev = () => this.fixPageNext()
-	fixPageNext = () => {
-		this.scroll_timer_id = null
-		const el = this.mainElement
-		const abl_pos = cumulativeOffset(el)
-		const right = abl_pos.left + el.clientWidth
-		const pos = el.scrollLeft
-		const targets = new Set()
-		for (let x = 1; x < 3; x++) {
-			for (let i = 0; i < el.clientHeight; i += 10) {
-				const t = document.elementsFromPoint(right - x, abl_pos.top + i)
-				if (t.length > 3 && el.contains(t[0])) {
-					targets.add(t[0])
-					break
-				}
-			}
-		}
-		let offset = 0
-		for (const item of targets) {
-			for (const ch of retrieveCharactersRects(item)) {
-				const item_right = ch.rect.right + ch.rect.width / 2.3
-				if (ch.rect.left < right && right < item_right) {
-					if (offset < item_right - right) {
-						offset = item_right - right
-					}
-				}
-			}
-		}
-		el.scrollTo(pos + offset, 0)
-	}
-	//
 	setHistory = (cur_url, title) => {
-		if(!cur_url.searchParams.get("url")){
+		if (!cur_url.searchParams.get("url")) {
 			return
 		}
 		let history = this.setting["history"]
-		if(history){
+		if (history) {
 			const check_url = cur_url.searchParams.get("url")
 			let buf_history = []
-			buf_history.push({url: cur_url.searchParams.get("url"), name: title, scroll_pos: cur_url.searchParams.get("scroll_pos")})
-			for(const item of JSON.parse(history)){
-				if(item.url !== check_url){
+			buf_history.push({ url: cur_url.searchParams.get("url"), name: title, scroll_pos: cur_url.searchParams.get("scroll_pos") })
+			for (const item of JSON.parse(history)) {
+				if (item.url !== check_url) {
 					buf_history.push(item)
 				}
 			}
-			if(buf_history.length > 5){
+			if (buf_history.length > 5) {
 				buf_history.length = 5
 			}
 			this.setting["history"] = JSON.stringify(buf_history)
 		} else {
-			this.setting["history"] = JSON.stringify([{url: cur_url.searchParams.get("url"), name: title, scroll_pos: cur_url.searchParams.get("scroll_pos")}])
+			this.setting["history"] = JSON.stringify([{ url: cur_url.searchParams.get("url"), name: title, scroll_pos: cur_url.searchParams.get("scroll_pos") }])
 		}
 		this.txtMiruDB.setSetting([{ id: "history", value: this.setting["history"] }])
 	}
@@ -364,7 +401,7 @@ export class TxtMiru {
 			if (this.set_scroll_pos_state_timer_id) {
 				clearTimeout(this.set_scroll_pos_state_timer_id)
 			}
-			this.set_scroll_pos_state_timer_id = setTimeout(this.setScrollPosState, 500)
+			this.set_scroll_pos_state_timer_id = setTimeout(this.setScrollPosState, this.setting["delay-set-scroll-pos-state"])
 		})
 		this.mainElement.addEventListener("wheel", e => {
 			if (!this.display_popup) {
@@ -398,6 +435,11 @@ export class TxtMiru {
 			const url = new URL(window.location)
 			this.LoadNovel(url.searchParams.get('url'), url.searchParams.get('scroll_pos'), true)
 		})
+		const el_effect = document.getElementById("TxtMiruPageEffect")
+		el_effect.addEventListener("animationend", _ => { el_effect.style.display = "none" })
+		//
+		window.addEventListener('beforeunload', this.setScrollPosState)
+		window.addEventListener('unload', this.setScrollPosState)
 		//
 		this.txtMiruLocalFile.setEvent(this)
 		this.txtMiruInputURL.setEvent(this)
@@ -441,13 +483,13 @@ export class TxtMiru {
 		this.nextFunc = null
 		//
 		let history = this.setting["history"]
-		if(history){
+		if (history) {
 			history = JSON.parse(history)
 			let i = 0
-			for(const item of history){
+			for (const item of history) {
 				++i
 				const el = document.getElementById(`TxtMiruTopContentsHistory${i}`)
-				if(el){
+				if (el) {
 					el.style.display = "block"
 					el.innerHTML = `${i}. <a href='${item.url}' id='TxtMiruTopContentsHistoryAnchor${i}'>${item.name}</a>`
 					const el_a = document.getElementById(`TxtMiruTopContentsHistoryAnchor${i}`)
@@ -459,7 +501,7 @@ export class TxtMiru {
 				}
 			}
 			const el = document.getElementById(`TxtMiruTopContentsHistoryList`)
-			if(i > 0 && el){
+			if (i > 0 && el) {
 				el.style.display = "block"
 			}
 		}
@@ -624,20 +666,24 @@ export class TxtMiru {
 				}
 				el.addEventListener("click", this.nextFunc)
 			}
-			if(typeof scroll_pos == "string"){
-				const anchor_name = scroll_pos.replace(/#/, "")
-				const target_list = document.getElementsByName(anchor_name)
-				scroll_pos = this.mainElement.scrollWidth
-				const offset = (anchor_name === "current_line") ? this.mainElement.clientWidth / 2 : 0
-				if (target_list.length > 0) {
-					scroll_pos = -this.mainElement.clientWidth + target_list[0].getBoundingClientRect().right + this.mainElement.scrollLeft + offset
+			if (typeof scroll_pos == "string") {
+				if(scroll_pos.match(/^[\-0-9\.]+$/)){
+					this.mainElement.scrollTo(this.mainElement.scrollWidth * parseFloat(scroll_pos), 0)
 				} else {
-					const target = document.getElementById(anchor_name)
-					if (target) {
-						scroll_pos = -this.mainElement.clientWidth + target.getBoundingClientRect().right + this.mainElement.scrollLeft + offset
+					const anchor_name = scroll_pos.replace(/#/, "")
+					const target_list = document.getElementsByName(anchor_name)
+					scroll_pos = this.mainElement.scrollWidth
+					const offset = (anchor_name === "current_line") ? this.mainElement.clientWidth / 2 : 0
+					if (target_list.length > 0) {
+						scroll_pos = -this.mainElement.clientWidth + target_list[0].getBoundingClientRect().right + this.mainElement.scrollLeft + offset
+					} else {
+						const target = document.getElementById(anchor_name)
+						if (target) {
+							scroll_pos = -this.mainElement.clientWidth + target.getBoundingClientRect().right + this.mainElement.scrollLeft + offset
+						}
 					}
+					this.mainElement.scrollTo(scroll_pos, 0)
 				}
-				this.mainElement.scrollTo(scroll_pos, 0)
 			} else if (scroll_pos) {
 				this.mainElement.scrollTo(this.mainElement.scrollWidth * scroll_pos, 0)
 			} else {

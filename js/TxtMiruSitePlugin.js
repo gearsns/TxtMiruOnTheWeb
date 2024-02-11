@@ -1,7 +1,7 @@
-import { TxtMiruLib } from './TxtMiruLib.js?1.0.13.1'
+import { TxtMiruLib } from './TxtMiruLib.js?1.0.14.0'
 import fetchJsonp from './lib/fetch-jsonp.js'
-import { narou2html } from './lib/narou.js?1.0.13.1'
-import { AozoraText2Html } from './lib/aozora.js?1.0.13.1'
+import { narou2html } from './lib/narou.js?1.0.14.0'
+import { AozoraText2Html } from './lib/aozora.js?1.0.14.0'
 
 const appendSlash = text => {
 	if (!text.match(/\/$/)) {
@@ -525,8 +525,9 @@ class Narou extends TxtMiruSitePlugin {
 		if (!url) {
 			return []
 		}
-		if (url.match(/https:\/\/.*\.syosetu\.com\/n([A-Za-z0-9]+)/)) {
-			ncode = `N${RegExp.$1}`.toUpperCase()
+		const m = url.match(/https:\/\/.*\.syosetu\.com\/n([A-Za-z0-9]+)/)
+		if (m) {
+			ncode = `N${m[1]}`.toUpperCase()
 		}
 		if (ncode.length == 0) {
 			return []
@@ -543,8 +544,9 @@ class Narou extends TxtMiruSitePlugin {
 			for (const u of url) {
 				if (this.Match(u)) {
 					let ncode = u
-					if (u.match(/https:\/\/.*\.syosetu\.com\/n([A-Za-z0-9]+)/)) {
-						ncode = `n${RegExp.$1}`
+					const m = u.match(/https:\/\/.*\.syosetu\.com\/n([A-Za-z0-9]+)/)
+					if (m) {
+						ncode = `n${m[1]}`
 					}
 					item_list.push(u)
 					requests.push(ncode.toUpperCase())
@@ -645,6 +647,14 @@ TxtMiruSiteManager.AddSite(new Narou())
 class Kakuyomu extends TxtMiruSitePlugin {
 	Match = url => url.match(/https:\/\/kakuyomu\.jp/)
 	GetDocument = (txtMiru, url) => {
+		return this._GetDocument(txtMiru, url).then(item => {
+			if(null != item && item["html"].match(/An existing connection was forcibly closed by the remote host/)){
+				return this._GetDocument(txtMiru, url)
+			}
+			return item
+		})
+	}
+	_GetDocument = (txtMiru, url) => {
 		const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
 			url: url,
 			charset: "UTF-8"

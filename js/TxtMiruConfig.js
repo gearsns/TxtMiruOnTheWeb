@@ -1,4 +1,4 @@
-import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.13.1"
+import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.14.0"
 
 export class TxtMiruConfig {
 	constructor(txtMiru) {
@@ -29,6 +29,12 @@ export class TxtMiruConfig {
 		<dt>あなたは18歳以上ですか？
 		<dd class="config-radio-area">
 		<input type="radio" name="config-over18" id="config-over18-no" checked><label for="config-over18-no">NO</label><input type="radio" name="config-over18" id="config-over18-yes"><label for="config-over18-yes">YES</label>
+		<dt>スクロール位置を履歴に保存するまでの待機時間:ミリ秒 (1/1000 秒)
+		<dd><input id="delay-set-scroll-pos-state" value="">
+		<dt>スクロール時のアニメーションエフェクトを追加する
+		<dd class="config-radio-area">
+		<input type="radio" name="config-page-scroll-effect-animation" id="config-page-scroll-effect-animation-no"><label for="config-page-scroll-effect-animation-no">NO</label>
+		<input type="radio" name="config-page-scroll-effect-animation" id="config-page-scroll-effect-animation-yes" checked><label for="config-page-scroll-effect-animation-yes">YES</label>
 		</dl>
 </div>`.replace(/[\r\n]/g, "")
 		document.body.appendChild(this.configElement)
@@ -73,6 +79,16 @@ export class TxtMiruConfig {
 			document.getElementById("config-user-id").value = setting["UserID"]
 		} else {
 			document.getElementById("config-user-id").value = ""
+		}
+		if(setting["delay-set-scroll-pos-state"]){
+			document.getElementById("delay-set-scroll-pos-state").value = setting["delay-set-scroll-pos-state"]
+		} else {
+			document.getElementById("delay-set-scroll-pos-state").value = ""
+		}
+		if(setting["page-scroll-effect-animation"]){
+			document.getElementById("config-page-scroll-effect-animation-yes").checked = true
+		} else {
+			document.getElementById("config-page-scroll-effect-animation-no").checked = true
 		}
 	}
 	show = async (txtMiru) => {
@@ -126,10 +142,16 @@ export class TxtMiruConfig {
 			} else {
 				txtMiru.setting["over18"] = "no"
 			}
+			if(document.getElementById("config-page-scroll-effect-animation-yes").checked){
+				txtMiru.setting["page-scroll-effect-animation"] = true
+			} else {
+				txtMiru.setting["page-scroll-effect-animation"] = false
+			}
 			//
 			txtMiru.setting["WebServerUrl"] = document.getElementById("config-server-url").value
 			txtMiru.setting["WebSocketServerUrl"] = document.getElementById("config-websocket-server-url").value
 			txtMiru.setting["UserID"] = document.getElementById("config-user-id").value
+			txtMiru.setting["delay-set-scroll-pos-state"] = document.getElementById("delay-set-scroll-pos-state").value
 			txtMiru.saveSetting().then(ret => {
 				this.configElement.className = "hide-config"
 				txtMiru.reflectSetting()

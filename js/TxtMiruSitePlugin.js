@@ -1,7 +1,7 @@
-import { TxtMiruLib } from './TxtMiruLib.js?1.0.14.0'
+import { TxtMiruLib } from './TxtMiruLib.js?1.0.14.1'
 import fetchJsonp from './lib/fetch-jsonp.js'
-import { narou2html } from './lib/narou.js?1.0.14.0'
-import { AozoraText2Html } from './lib/aozora.js?1.0.14.0'
+import { narou2html } from './lib/narou.js?1.0.14.1'
+import { AozoraText2Html } from './lib/aozora.js?1.0.14.1'
 
 const appendSlash = text => {
 	if (!text.match(/\/$/)) {
@@ -59,7 +59,7 @@ const parseHtml = (url, index_url, html, class_name) => {
 			document.title = e.textContent
 		}
 	}
-	//
+	// ファイルサイズが大きいと処理が遅くなるので章ごとにページを分ける
 	html = doc.body.innerHTML
 	if (html.length > 50000) {
 		let target_no = 0
@@ -70,6 +70,7 @@ const parseHtml = (url, index_url, html, class_name) => {
 		let subtitle = {}
 		let n = 0
 		if (target_no === 0) {
+			// 目次ページの作成
 			let e_list = []
 			let page = 0
 			for (const e of main_e.childNodes) {
@@ -471,14 +472,18 @@ TxtMiruSiteManager.AddSite(new TxtMiruCacheSite())
 
 class Narou extends TxtMiruSitePlugin {
 	Match = url => url.match(/https:\/\/.*\.syosetu\.com/)
-	GetDocument = (txtMiru, url) => {
+	GetDocument = async (txtMiru, url) => {
 		const cookie = (txtMiru.setting["over18"] == "yes") ? "over18=yes" : ""
 		const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
 			url: url,
 			charset: "UTF-8",
 			cookie: cookie
 		})}`
-		return fetch(req_url, null)
+		const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time))
+		let html = null
+		for(let i=1; i<=5; ++i){
+			try {
+				html = await fetch(req_url, null)
 			.then(response => response.text())
 			.then(text => {
 				let doc = TxtMiruLib.HTML2Document(text)
@@ -519,6 +524,20 @@ class Narou extends TxtMiruSitePlugin {
 			.catch(err => {
 				return err
 			})
+			} catch(e){
+				console.log(e)
+			}
+			if (html instanceof  Error){
+				
+			}
+			else
+			{
+				break
+			}
+			console.log(`retry:${i}`)
+			await sleep(1000 * i)
+		}
+		return html
 	}
 	getUpdateInfo = async url => {
 		let ncode = url
@@ -587,8 +606,9 @@ class Narou extends TxtMiruSitePlugin {
 			let out_results = []
 			for (const u of url) {
 				let ncode = u
-				if (u.match(/https:\/\/.*\.syosetu\.com\/n([A-Za-z0-9]+)/)) {
-					ncode = `n${RegExp.$1}`.toUpperCase()
+				let m = u.match(/https:\/\/.*\.syosetu\.com\/n([A-Za-z0-9]+)/)
+				if (m) {
+					ncode = `n${m[1]}`.toUpperCase()
 				}
 				ncode = ncode.toUpperCase()
 				for (const ret of results) {
@@ -606,8 +626,9 @@ class Narou extends TxtMiruSitePlugin {
 			return out_results
 		} else if (this.Match(url)) {
 			let ncode = url
-			if (url.match(/https:\/\/.*\.syosetu\.com\/n([A-Za-z0-9]+)/)) {
-				ncode = `n${RegExp.$1}`.toUpperCase()
+			let m = url.match(/https:\/\/.*\.syosetu\.com\/n([A-Za-z0-9]+)/)
+			if (m) {
+				ncode = `n${m[1]}`.toUpperCase()
 			}
 			ncode = ncode.toUpperCase()
 			if (callback) {
@@ -629,9 +650,10 @@ class Narou extends TxtMiruSitePlugin {
 	GetPageNo = (txtMiru, url) => {
 		if (this.Match(url)) {
 			url = appendSlash(url)
-			if (url.match(/(https:\/\/.*\.syosetu\.com\/n[A-Za-z0-9]+)\/([0-9]+)/)) {
-				let page_no = RegExp.$2 | 0
-				let index_url = RegExp.$1
+			const m = url.match(/(https:\/\/.*\.syosetu\.com\/n[A-Za-z0-9]+)\/([0-9]+)/)
+			if (m) {
+				let page_no = m[2] | 0
+				let index_url = m[1]
 				index_url = appendSlash(index_url)
 				return { url: url, page_no: page_no, index_url: index_url }
 			} else if (url.match(/https:\/\/.*\.syosetu\.com\/n[A-Za-z0-9]+\/$/)) {
@@ -704,6 +726,46 @@ class Kakuyomu extends TxtMiruSitePlugin {
 						el_a.style.display = "none"
 					}
 				}
+				// https://kakuyomu.jp/works/xxxxxxxxx
+				if (appendSlash(url).match(/https:\/\/kakuyomu\.jp\/works\/[^\/]+\/$/)) {
+					let indexes = []
+					try {
+						let script_data = doc.getElementById("__NEXT_DATA__");
+						if (script_data) {
+							let base_name = ""
+							const m0 = index_url.match(/works\/(.*)/)
+							if(m0 && m0.length > 0){
+								base_name = m0[1]
+							}
+							const json = JSON.parse(script_data.innerHTML)
+							const apollo_state = json["props"]["pageProps"]["__APOLLO_STATE__"]
+							const root_query = apollo_state["ROOT_QUERY"]
+							const top_work_id = root_query["work({\"id\":\"" + base_name + "\"})"]["__ref"]
+							const top_work = apollo_state[top_work_id];
+							title = top_work["title"];
+							const tableOfContents = top_work["tableOfContents"]
+							for (const i = 0; i < tableOfContents.length; ++i) {
+								const subTableOfContents = apollo_state[tableOfContents[i]["__ref"]]
+								if (subTableOfContents["chapter"]){
+									indexes.push({ type: "chapter", name: apollo_state[subTableOfContents["chapter"]["__ref"]]["title"] })
+								}
+								const episodes = subTableOfContents["episodeUnions"]
+								if (episodes) {
+									for(let j=0; j<episodes.length; ++j)
+									{
+										let item = { type: 'index'}
+										item.href = url + "/episodes/" + apollo_state[episodes[j]["__ref"]]["id"]
+										item.name = apollo_state[episodes[j]["__ref"]]["title"]
+										indexes.push(item)
+									}
+								}
+							}
+						}
+					} catch (e) {
+		
+					}
+				}
+				// https://kakuyomu.jp/works/xxxxxxxxx/episodes/xxxxxxxxx
 				item["html"] = title + doc.body.innerHTML
 				return item
 			})
@@ -755,7 +817,7 @@ class Kakuyomu extends TxtMiruSitePlugin {
 
 			}
 			try {
-				var script_data = doc.getElementById("__NEXT_DATA__");
+				let script_data = doc.getElementById("__NEXT_DATA__");
 				if (script_data) {
 					let base_name = ""
 					const m0 = index_url.match(/works\/(.*)/)
@@ -772,7 +834,7 @@ class Kakuyomu extends TxtMiruSitePlugin {
 					const tableOfContents = top_work["tableOfContents"]
 					max_page = 0
 					for (const i = 0; i < tableOfContents.length; ++i) {
-						const subTableOfContents = apollo_state[tableOfContents[i]["__ref"]];
+						const subTableOfContents = apollo_state[tableOfContents[i]["__ref"]]
 						const episodes = subTableOfContents["episodeUnions"]
 						if (episodes) {
 							max_page += episodes.length

@@ -1,10 +1,10 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.14.0'
-import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.14.0'
-import { TxtMiruLocalFile } from './TxtMiruLocalFile.js?1.0.14.0'
-import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.14.0'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.14.0'
-import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.14.0'
-import { TxtMiruDB } from './TxtMiruDB.js?1.0.14.0'
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.14.1'
+import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.14.1'
+import { TxtMiruLocalFile } from './TxtMiruLocalFile.js?1.0.14.1'
+import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.14.1'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.14.1'
+import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.14.1'
+import { TxtMiruDB } from './TxtMiruDB.js?1.0.14.1'
 
 const TxtMiruTitle = "TxtMiru on the Web"
 // DOM
@@ -401,7 +401,9 @@ export class TxtMiru {
 			if (this.set_scroll_pos_state_timer_id) {
 				clearTimeout(this.set_scroll_pos_state_timer_id)
 			}
+			if (this.setting["delay-set-scroll-pos-state"] >= 0) {
 			this.set_scroll_pos_state_timer_id = setTimeout(this.setScrollPosState, this.setting["delay-set-scroll-pos-state"])
+			}
 		})
 		this.mainElement.addEventListener("wheel", e => {
 			if (!this.display_popup) {
@@ -592,6 +594,7 @@ export class TxtMiru {
 			this.contentsElement.setAttribute("episode-index", item["episode-index"])
 			this.contentsElement.innerHTML = html
 			for (const el_a of this.contentsElement.getElementsByTagName("A")) {
+				let m = null
 				const href = el_a.getAttribute("href")
 				if (href && href.match(/^(?:http|https|txtmiru):\/\//i)) {
 					let support = false
@@ -608,8 +611,8 @@ export class TxtMiru {
 							this.LoadNovel(`${href}`)
 						})
 					}
-				} else if (href && href.match(/^#(.*)/)) {
-					const name = RegExp.$1
+				} else if (href && (m = href.match(/^#(.*)/))) {
+					const name = m[1]
 					el_a.addEventListener("click", e => {
 						e.preventDefault()
 						e.stopPropagation()

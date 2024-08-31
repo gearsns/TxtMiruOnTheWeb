@@ -1,10 +1,10 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.14.2'
-import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.14.2'
-import { TxtMiruLocalFile } from './TxtMiruLocalFile.js?1.0.14.2'
-import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.14.2'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.14.2'
-import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.14.2'
-import { TxtMiruDB } from './TxtMiruDB.js?1.0.14.2'
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.14.3'
+import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.14.3'
+import { TxtMiruLocalFile } from './TxtMiruLocalFile.js?1.0.14.3'
+import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.14.3'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.14.3'
+import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.14.3'
+import { TxtMiruDB } from './TxtMiruDB.js?1.0.14.3'
 
 const TxtMiruTitle = "TxtMiru on the Web"
 // DOM
@@ -22,6 +22,39 @@ const cumulativeOffset = element => {
 	}
 }
 // 文字ごとの座標を取得
+const retrieveCharactersRectsRange = (elem, left, right) => {
+	const treeWalker = document.createTreeWalker(
+		elem,
+		NodeFilter.SHOW_TEXT
+	)
+	let results = []
+	while(treeWalker.nextNode())
+	{
+		const target = treeWalker.currentNode
+		if (target.parentElement && target.nodeValue.trim().length > 0) {
+			let topElementRect = target.parentElement.getBoundingClientRect()
+			if (topElementRect.left <= right && topElementRect.right >= left){
+				const range = target.ownerDocument.createRange()
+				range.selectNodeContents(target)
+				range.setStart(target, 0)
+				range.setEnd(target, range.endOffset)
+				let r = range.getBoundingClientRect()
+				if (r.left <= right && r.right >= left && r.width > 0 && r.height > 0){
+					for (let current_pos = 0, end_pos = range.endOffset; current_pos < end_pos; ++current_pos) {
+						range.setStart(target, current_pos)
+						range.setEnd(target, current_pos + 1)
+						results.push({
+							character: range.toString(),
+							rect: range.getBoundingClientRect()
+						})
+					}
+				}
+				range.detach()
+			}
+		}
+	}
+	return results
+}
 const retrieveCharactersRects = elem => {
 	let results = []
 	if (elem.nodeType == elem.TEXT_NODE) {
@@ -60,7 +93,7 @@ export class TxtMiru {
 	cache_list = []
 	default_setting = {
 		"WebServerUrl": "https://script.google.com/macros/s/AKfycbxf6f5omc-p0kTdmyPh92wdpXv9vfQBqa9HJYtypTGD5N5Aqf5S5CWf-yQ6x6sIj4pf3g/exec",
-		"delay-set-scroll-pos-state": 500,
+		"delay-set-scroll-pos-state": 10000,
 		"page-scroll-effect-animation": true,
 	}
 	setting = { ...this.default_setting }
@@ -232,7 +265,7 @@ export class TxtMiru {
 						break
 					}
 				} while (true)
-				for (const ch of retrieveCharactersRects(item)) {
+				for (const ch of retrieveCharactersRectsRange(item, 0, 30)) {
 					const item_right = ch.rect.right + ch.rect.width / 5 //2.3
 					if (ch.rect.left < check_right && check_right < ch.rect.right) {
 						if (offset < item_right - right) {

@@ -42,5 +42,5 @@ document.getElementById("btn_end").addEventListener("click", e => {
 	txtMiru.pageEnd()
 })
 
-import { TxtMiru } from './TxtMiru.js?1.0.14.3'
+import { TxtMiru } from './TxtMiru.js?1.0.14.4'
 const txtMiru = new TxtMiru("TxtMiruMain")

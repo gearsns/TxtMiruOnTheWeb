@@ -1019,7 +1019,6 @@ button::before {
     border-radius: 50%;
     transform-origin: center top;
     transform: rotate(-40deg);
-    background: white url(seigaiha.png);
     opacity: 0.2;
     right: -12em;
     bottom: -30em;
@@ -1136,6 +1135,16 @@ button.goto2:hover {
 .Narou .footerbookmark,
 .Narou #recommend,
 .Narou #footer,
+.Narou .c-announce-box,
+.Narou .c-menu,
+.Narou .c-modal,
+.Narou .c-navigater,
+.Narou .c-toast,
+.Narou .l-footer,
+.Narou .p-novelgood-form,
+.Narou .p-finish-read,
+.Narou .p-novelpoint-form__note,
+.Narou .novel_hyouka,
 .Narou #pageTop,
 .Narou #impression {
     display: none;
@@ -1214,6 +1223,11 @@ button.goto2:hover {
     hanging-punctuation: force-end;
 }
 
+.Narou .c-pager__item {
+    margin-bottom: 1rem;
+    background-color: darkseagreen;
+    text-decoration: none;
+}
 
 
 /**/

@@ -1,7 +1,7 @@
-import { TxtMiruLib } from './TxtMiruLib.js?1.0.14.3'
+import { TxtMiruLib } from './TxtMiruLib.js?1.0.14.4'
 import fetchJsonp from './lib/fetch-jsonp.js'
-import { narou2html } from './lib/narou.js?1.0.14.3'
-import { AozoraText2Html } from './lib/aozora.js?1.0.14.3'
+import { narou2html } from './lib/narou.js?1.0.14.4'
+import { AozoraText2Html } from './lib/aozora.js?1.0.14.4'
 
 const appendSlash = text => {
 	if (!text.match(/\/$/)) {
@@ -496,10 +496,15 @@ class Narou extends TxtMiruSitePlugin {
 					if (!href.match(/^http/)) {
 						el_a.href = TxtMiruLib.ConvertAbsoluteURL(url, href) //`https://ncode.syosetu.com${href}`
 					}
-						if (el_a.innerText === "<< 前へ" || el_a.className === "novelview_pager-before") {
+						const classlist = el_a.classList
+						if (el_a.innerText === "<< 前へ"
+							 || classlist.contains("novelview_pager-before")
+							 || classlist.contains("c-pager__item--before")) {
 						item["prev-episode"] = el_a.href
 						item["prev-episode-text"] = "前へ"
-						} else if (el_a.innerText == "次へ >>" || el_a.className === "novelview_pager-next") {
+						} else if (el_a.innerText == "次へ >>"
+							|| classlist.contains("novelview_pager")
+							|| classlist.contains("c-pager__item--next")) {
 						item["next-episode"] = el_a.href
 						item["next-episode-text"] = "次へ"
 					} else if (el_a.innerText == "目次") {

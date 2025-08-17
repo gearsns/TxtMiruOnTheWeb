@@ -1,4 +1,20 @@
 .loader {
+    width: 8em;
+    height: 8em;
+    border-radius: 50%;
+    border: 1em solid white;
+    border-left-color: #1082ce; 
+    animation: spinner-rotation 1s linear infinite;
+}
+@keyframes spinner-rotation {
+    0% {
+        transform: rotate(0);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+.xloader {
   color: #ffffff;
   font-size: 90px;
   text-indent: -9999em;

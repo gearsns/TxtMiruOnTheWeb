@@ -1,7 +1,7 @@
-import { TxtMiruLib } from './TxtMiruLib.js?1.0.14.4'
+import { TxtMiruLib } from './TxtMiruLib.js?1.0.15.0'
 import fetchJsonp from './lib/fetch-jsonp.js'
-import { narou2html } from './lib/narou.js?1.0.14.4'
-import { AozoraText2Html } from './lib/aozora.js?1.0.14.4'
+import { narou2html } from './lib/narou.js?1.0.15.0'
+import { AozoraText2Html } from './lib/aozora.js?1.0.15.0'
 
 const appendSlash = text => {
 	if (!text.match(/\/$/)) {
@@ -484,51 +484,80 @@ class Narou extends TxtMiruSitePlugin {
 		for(let i=1; i<=5; ++i){
 			try {
 				html = await fetch(req_url, null)
-			.then(response => response.text())
-			.then(text => {
-				let doc = TxtMiruLib.HTML2Document(text)
-				document.title = doc.title
-				TxtMiruLib.KumihanMod(url, doc)
-				let item = { className: "Narou" }
-				//
-				for (const el_a of doc.getElementsByTagName("A")) {
-					const href = el_a.getAttribute("href") || ""
-					if (!href.match(/^http/)) {
-						el_a.href = TxtMiruLib.ConvertAbsoluteURL(url, href) //`https://ncode.syosetu.com${href}`
+					.then(response => response.text())
+					.then(text => {
+					let doc = TxtMiruLib.HTML2Document(text)
+					document.title = doc.title
+					TxtMiruLib.KumihanMod(url, doc)
+					let item = { className: "Narou" }
+					//
+					const elTxtMiruPrevPage = doc.getElementById("TxtMiruPrevPage")
+					const elTxtMiruTocPage = doc.getElementById("TxtMiruTocPage")
+					const elTxtMiruNextPage = doc.getElementById("TxtMiruNextPage")
+					const forcePager = elTxtMiruPrevPage || elTxtMiruTocPage || elTxtMiruNextPage
+					if (elTxtMiruPrevPage) {
+						item["prev-episode"] = elTxtMiruPrevPage.href
+						item["prev-episode-text"] = elTxtMiruPrevPage.textContent
 					}
+					if (elTxtMiruTocPage) {
+						item["episode-index"] = elTxtMiruTocPage.href
+						item["episode-index-text"] = elTxtMiruTocPage.textContent
+					}
+					if (elTxtMiruNextPage) {
+						item["next-episode"] = elTxtMiruNextPage.href
+						item["next-episode-text"] = elTxtMiruNextPage.textContent
+					}
+					for (const el_a of doc.getElementsByTagName("A")) {
+						const href = el_a.getAttribute("href") || ""
+						if (!href.match(/^http/)) {
+							el_a.href = TxtMiruLib.ConvertAbsoluteURL(url, href) //`https://ncode.syosetu.com${href}`
+						}
 						const classlist = el_a.classList
 						if (el_a.innerText === "<< 前へ"
-							 || classlist.contains("novelview_pager-before")
-							 || classlist.contains("c-pager__item--before")) {
-						item["prev-episode"] = el_a.href
-						item["prev-episode-text"] = "前へ"
+							|| classlist.contains("novelview_pager-before")
+							|| classlist.contains("c-pager__item--before")) {
+							if (forcePager) {
+								el_a.style.display = "none"
+							} else {
+								item["prev-episode"] = el_a.href
+								item["prev-episode-text"] = "前へ"
+							}
 						} else if (el_a.innerText == "次へ >>"
 							|| classlist.contains("novelview_pager")
 							|| classlist.contains("c-pager__item--next")) {
-						item["next-episode"] = el_a.href
-						item["next-episode-text"] = "次へ"
-					} else if (el_a.innerText == "目次") {
-						item["episode-index"] = el_a.href
-						item["episode-index-text"] = "目次へ"
-					}
-				}
-				for (const el of doc.getElementsByClassName("long_update")) {
-					let el_rev = null
-					for (const el_span of el.getElementsByTagName("SPAN")) {
-						if (el_span.getAttribute("title")) {
-							el_rev = el_span
+							if (forcePager) {
+								el_a.style.display = "none"
+							} else {
+								item["next-episode"] = el_a.href
+								item["next-episode-text"] = "次へ"
+							}
+						} else if (el_a.innerText == "目次" && el_a.id !== "TxtMiruTocPage") {
+							if (forcePager) {
+								el_a.style.display = "none"
+							} else {
+								item["episode-index"] = el_a.href
+								item["episode-index-text"] = "目次へ"
+							}
 						}
 					}
-					if (el_rev) {
-						el.insertBefore(el_rev, el.firstChild)
+					for (const el of doc.getElementsByClassName("long_update")) {
+						let el_rev = null
+						for (const el_span of el.getElementsByTagName("SPAN")) {
+							if (el_span.getAttribute("title")) {
+								el_rev = el_span
+							}
+						}
+						if (el_rev) {
+							el.insertBefore(el_rev, el.firstChild)
+						}
 					}
-				}
-				item["html"] = doc.body.innerHTML
-				return item
-			})
-			.catch(err => {
-				return err
-			})
+					item["html"] = doc.body.innerHTML
+					return item
+				})
+				.catch(err => {
+					console.log(err)
+					return err
+				})
 			} catch(e){
 				console.log(e)
 			}

@@ -227,6 +227,13 @@ ruby[data-ruby] rt {
     padding-bottom: 0.5em;
 }
 
+.txtmiru_pager {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+    background-color: darkseagreen;
+    text-decoration: none !important;
+}
 
 /**/
 
@@ -1146,6 +1153,10 @@ button.goto2:hover {
 .Narou .p-novelpoint-form__note,
 .Narou .novel_hyouka,
 .Narou #pageTop,
+.Narou form,
+.Narou .p-new-impression__manage,
+.Narou .p-bookmark-bar,
+.Narou .p-reaction,
 .Narou #impression {
     display: none;
 }

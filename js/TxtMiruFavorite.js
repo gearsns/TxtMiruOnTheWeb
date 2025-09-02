@@ -1,6 +1,6 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.15.0'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.15.0'
-import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.15.0"
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.16.0'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.16.0'
+import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.16.0"
 
 export class TxtMiruFavorite {
 	constructor(txtMiru) {
@@ -184,7 +184,10 @@ export class TxtMiruFavorite {
 					if (parseInt(item.cur_page) < parseInt(item.max_page)) {
 						tag_add = `<span class="updated">New</span>`
 					}
-					tr_list.push(`<tr item_id="${item.id}" url="${item.url}" cur_url="${item.cur_url}"><th>${num}<div class="check"></div><td>${item.cur_page}<td>/<td>${item.max_page}<td>${tag_add}<span class="novel_title">${item.name}</span><br>${item.author}<td>${site_name}`)
+					if (item.source){
+						site_name += `<br>${item.source}`
+					}
+					tr_list.push(`<tr item_id="${item.id}" url="${item.url}" cur_url="${item.cur_url}" source="${item.source}"><th>${num}<div class="check"></div><td>${item.cur_page}<td>/<td>${item.max_page}<td>${tag_add}<span class="novel_title">${item.name}</span><br>${item.author}<td>${site_name}`)
 				}
 			}
 		} catch {
@@ -204,12 +207,16 @@ export class TxtMiruFavorite {
 		this.txtMiruLoading.end()
 	}
 
-	setCurrentPage = async (txtMiru, url) => {
+	setCurrentPage = async (txtMiru, url, item) => {
+		if (item["episode-index"] && item["page_no"]) {
+			await this.txtMiruDB.getFavoriteByUrl(item["episode-index"], item["page_no"], url)
+			return
+		}
 		for (const site of TxtMiruSiteManager.SiteList()) {
 			if (site.Match(url)) {
 				const page = await site.GetPageNo(txtMiru, url)
 				if (page && page.index_url) {
-					const item = await this.txtMiruDB.getFavoriteByUrl(page.index_url)
+					const item = await this.txtMiruDB.getFavoriteByUrl(page.index_url, page.page_no, url)
 					if (item && item.length > 0 && item[0].cur_page < page.page_no) {
 						await this.txtMiruDB.setFavorite(item[0].id, { cur_page: page.page_no, cur_url: url })
 					}
@@ -294,6 +301,9 @@ export class TxtMiruFavorite {
 			}
 			if (url_list.length == 0) {
 				for (const tr of tr_list) {
+					if (tr.getAttribute("source")) {
+						continue
+					}
 					const url = tr.getAttribute("url")
 					if (url) {
 						url_list.push(url)
@@ -447,7 +457,8 @@ export class TxtMiruFavorite {
 			if (tr) {
 				this.favoriteElement.className = "hide-favorite"
 				txtMiru.display_popup = false
-				txtMiru.LoadNovel(tr.getAttribute("cur_url"))
+				const url = tr.getAttribute("cur_url") || tr.getAttribute("url")
+				txtMiru.LoadNovel(url)
 				return false
 			}
 		})

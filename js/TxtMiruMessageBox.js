@@ -12,7 +12,7 @@ export let TxtMiruMessageBox = {
 				}
 			}
 			const messageElement = document.createElement("div")
-			messageElement.className = "show-messagbox"
+			messageElement.className = "show-messagebox"
 			messageElement.innerHTML = `<div class="message-inner">${message}<div>${button_html}</div></div>`
 
 			for(const element of messageElement.getElementsByTagName("button")){

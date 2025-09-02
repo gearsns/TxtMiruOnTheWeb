@@ -1,10 +1,10 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.15.0'
-import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.15.0'
-import { TxtMiruLocalFile } from './TxtMiruLocalFile.js?1.0.15.0'
-import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.15.0'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.15.0'
-import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.15.0'
-import { TxtMiruDB } from './TxtMiruDB.js?1.0.15.0'
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.16.0'
+import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.16.0'
+import { TxtMiruLocalFile } from './TxtMiruLocalFile.js?1.0.16.0'
+import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.16.0'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.16.0'
+import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.16.0'
+import { TxtMiruDB } from './TxtMiruDB.js?1.0.16.0'
 
 const TxtMiruTitle = "TxtMiru on the Web"
 // DOM
@@ -103,6 +103,7 @@ export class TxtMiru {
 		this.mainElement.setAttribute("tabindex", 1)
 		this.mainElement.innerHTML = `<div id="TxtMiruPageEffect"></div><div class="prev-episode"></div><div id="contents" class="contents"><p style="width:100vw"></p></div><div class="next-episode"></div>`
 		this.contentsElement = document.getElementById("contents")
+		this.setButtonBind()
 		//
 		this.txtMiruDB = new TxtMiruDB(this)
 		new Promise((resolve, reject) => {
@@ -141,20 +142,34 @@ export class TxtMiru {
 				classNameList.push(cn)
 			}
 		}
-		if (this.setting["font-size"] == "large") {
+		if (this.setting["font-size"] === "large-p") {
+			classNameList.push("zoom_p2")
+		} else if (this.setting["font-size"] === "large") {
 			classNameList.push("zoom_p1")
-		} else if (this.setting["font-size"] == "small") {
+		} else if (this.setting["font-size"] === "small") {
 			classNameList.push("zoom_m1")
 		}
 		el.className = classNameList.join(" ")
 		//
-		if (this.setting["theme"] == "dark") {
+		if (this.setting["theme"] === "dark") {
 			document.body.className = "dark"
 		} else {
 			document.body.className = ""
 		}
-		if (this.setting["menu-position"] == "bottom") {
+		if (this.setting["menu-position"] === "bottom") {
 			document.body.className += " bottom_menu"
+		}
+		if (this.setting["show-episode-button"] === "true") {
+			document.getElementById("btn_prev_episode").classList.remove("hidden")
+			document.getElementById("btn_next_episode").classList.remove("hidden")
+		} else {
+			document.getElementById("btn_prev_episode").classList.add("hidden")
+			document.getElementById("btn_next_episode").classList.add("hidden")
+		}
+		if (this.setting["show-index-button"] === "true") {
+			document.getElementById("btn_index").classList.remove("hidden")
+		} else {
+			document.getElementById("btn_index").classList.add("hidden")
 		}
 		this.setupWebsock(this.setting["WebSocketServerUrl"])
 	}
@@ -324,12 +339,8 @@ export class TxtMiru {
 		}
 	}
 	//
-	pagePrev = () => {
-		this.scrollPageEffect(false)
-	}
-	pageNext = () => {
-		this.scrollPageEffect(true)
-	}
+	pagePrev = () => this.scrollPageEffect(false)
+	pageNext = () => this.scrollPageEffect(true)
 	pageTop = () => this.mainElement.scrollTo({ left: this.mainElement.scrollWidth, behavior: "smooth"})
 	pageEnd = () => this.mainElement.scrollTo({ left: -this.mainElement.scrollWidth, behavior: "smooth"})
 	//
@@ -482,21 +493,6 @@ export class TxtMiru {
 		this.txtMiruConfig.setEvent(this)
 	}
 	//
-	pageInfo = async url => {
-		if (!url) {
-			const cur_url = new URL(window.location)
-			url = cur_url.searchParams.get('url')
-			if (!url) {
-				return
-			}
-		}
-		for (const site of TxtMiruSiteManager.SiteList()) {
-			if (site.Match(url)) {
-				return site.Info(url)
-			}
-		}
-		return null
-	}
 	setTxtMiruIndexSite = () => {
 		document.getElementById("contents").innerHTML = document.getElementById("TxtMiruTopContents").innerHTML
 		const oldPrevFunc = this.prevFunc
@@ -543,7 +539,6 @@ export class TxtMiru {
 	}
 	//
 	LoadNovel = (url, scroll_pos = 0, no_history = false) => {
-		//
 		const old_url = new URL(window.location)
 		const title = document.title
 		if (!no_history) {
@@ -555,22 +550,19 @@ export class TxtMiru {
 			history.pushState(state, title, old_url)
 			this.setHistory(old_url, title)
 		}
+		document.getElementById("btn_index").disabled = true
+		document.getElementById("btn_next_episode").disabled = true
+		document.getElementById("btn_prev_episode").disabled = true
 		//
 		this.contentsElement.setAttribute("prev-episode", "")
 		this.contentsElement.setAttribute("next-episode", "")
 		this.contentsElement.setAttribute("episode-index", "")
 		if (!url) {
 			this.setTxtMiruIndexSite()
-			//
-			old_url.searchParams.get('url')
-			if (!url) {
-				return
-			}
-			scroll_pos = old_url.searchParams.get('scroll_pos')
+			return
 		}
 		//
 		this.txtMiruLoading.begin()
-		this.txtMiruFavorite.setCurrentPage(this, url)
 		TxtMiruSiteManager.GetDocument(this, url).then(item => {
 			if (item == null) {
 				return
@@ -581,26 +573,26 @@ export class TxtMiru {
 					item[key] = ""
 				}
 			}
-			if (item["next-episode-text"].length == 0 && item["next-episode"].length > 0) {
-				item["next-episode-text"] = "次へ"
+			const setEpisodeText = (id_text, id_url, text) => {
+				if (item[id_text].length == 0 && item[id_url].length > 0) {
+					item[id_text] = text
+				}
 			}
-			if (item["prev-episode-text"].length == 0 && item["prev-episode"].length > 0) {
-				item["prev-episode-text"] = "前へ"
+			const setIndexHtml = (id_text, id_url) => {
+				item[id_url] = "./index.html"
+				item[id_text] = TxtMiruTitle
 			}
-			if (item["episode-index-text"].length == 0 && item["episode-index"].length > 0) {
-				item["episode-index-text"] = "目次へ"
-			}
+			setEpisodeText("next-episode-text", "next-episode", "次へ")
+			setEpisodeText("prev-episode-text", "prev-episode", "前へ")
+			setEpisodeText("episode-index-text", "episode-index", "目次へ")
 			if (item["next-episode-text"].length == 0 && item["episode-index-text"].length == 0) {
-				item["next-episode"] = "./index.html"
-				item["next-episode-text"] = TxtMiruTitle
+				setIndexHtml("next-episode-text", "next-episode")
 			}
 			if (item["prev-episode-text"].length == 0 && item["episode-index-text"].length == 0) {
-				item["prev-episode"] = "./index.html"
-				item["prev-episode-text"] = TxtMiruTitle
+				setIndexHtml("prev-episode-text", "prev-episode")
 			}
 			if (item["episode-index-text"].length == 0) {
-				item["episode-index"] = "./index.html"
-				item["episode-index-text"] = TxtMiruTitle
+				setIndexHtml("episode-index-text", "episode-index")
 			}
 			if (!no_history) {
 				const state = {
@@ -615,12 +607,9 @@ export class TxtMiru {
 			let html = item.html
 			if (html == "undefined") {
 				html = `<P>${url}</P><P>ページにつながりませんでした。</P>`
-				item["prev-episode"] = "./index.html"
-				item["next-episode"] = "./index.html"
-				item["episode-index"] = "./index.html"
-				item["next-episode-text"] = TxtMiruTitle
-				item["prev-episode-text"] = TxtMiruTitle
-				item["episode-index-text"] = TxtMiruTitle
+				setIndexHtml("next-episode-text", "next-episode")
+				setIndexHtml("prev-episode-text", "prev-episode")
+				setIndexHtml("episode-index-text", "episode-index")
 			}
 			this.contentsElement.setAttribute("prev-episode", item["prev-episode"])
 			this.contentsElement.setAttribute("next-episode", item["next-episode"])
@@ -656,18 +645,13 @@ export class TxtMiru {
 					})
 				}
 			}
-			for (const el of this.mainElement.getElementsByClassName("prev-episode")) {
-				if (item["prev-episode"]) {
-					el.innerHTML = `<a href="${item["prev-episode"]}" class="${item["className"]}">${item["prev-episode-text"]}</a>`
-				} else if (item["episode-index"]) {
-					el.innerHTML = `<a href="${item["episode-index"]}" class="${item["className"]}">${item["episode-index-text"]}</a>`
-				}
-			}
-			for (const el of this.mainElement.getElementsByClassName("next-episode")) {
-				if (item["next-episode"]) {
-					el.innerHTML = `<a href="${item["next-episode"]}" class="${item["className"]}">${item["next-episode-text"]}</a>`
-				} else if (item["episode-index"]) {
-					el.innerHTML = `<a href="${item["episode-index"]}" class="${item["className"]}">${item["episode-index-text"]}</a>`
+			for (const key of ["prev", "next"]) {
+				for (const el of this.mainElement.getElementsByClassName(`${key}-episode`)) {
+					if (item[`${key}-episode`]) {
+						el.innerHTML = `<a href="${item[`${key}-episode`]}" class="${item["className"]}">${item[`${key}-episode-text`]}</a>`
+					} else if (item["episode-index"]) {
+						el.innerHTML = `<a href="${item["episode-index"]}" class="${item["className"]}">${item["episode-index-text"]}</a>`
+					}
 				}
 			}
 			const oldPrevFunc = this.prevFunc
@@ -702,6 +686,17 @@ export class TxtMiru {
 				}
 				el.addEventListener("click", this.nextFunc)
 			}
+			//
+			if (item["episode-index"]) {
+				document.getElementById("btn_index").disabled = false
+			}
+			if (item["prev-episode"] || item["episode-index"] ){
+				document.getElementById("btn_prev_episode").disabled = false
+			}
+			if (item["next-episode"]) {
+				document.getElementById("btn_next_episode").disabled = false
+			}
+			//
 			if (typeof scroll_pos == "string") {
 				if(scroll_pos.match(/^[\-0-9\.]+$/)){
 					this.mainElement.scrollTo(this.mainElement.scrollWidth * parseFloat(scroll_pos), 0)
@@ -726,11 +721,56 @@ export class TxtMiru {
 				this.mainElement.scrollTo(this.mainElement.scrollWidth, 0)
 			}
 			this.setHistory(new URL(window.location), document.title)
+			this.txtMiruFavorite.setCurrentPage(this, url, item)
 		}).catch(err => {
 			this.setTxtMiruIndexSite()
 		}).finally(() => {
 			this.mainElement.focus()
 			this.txtMiruLoading.end()
+		})
+	}
+	setButtonBind = _ => {
+		const hideMenu = _ => {
+			document.getElementById("btn_show").className = "menu-trigger"
+			document.getElementById("control-button-panel").className = "hide-control"
+		}
+		const showMenu = _ => {
+			document.getElementById("btn_show").className = "menu-trigger active"
+			document.getElementById("control-button-panel").className = "show-control"
+		}
+		document.getElementById("btn_show").addEventListener("click", e => {
+			if (document.getElementById("control-button-panel").className == "show-control") {
+				hideMenu();
+			} else {
+				showMenu();
+			}
+		})
+		document.getElementById("btn_favorite").addEventListener("click", e => {
+			hideMenu();
+			this.showFavorite()
+		})
+		document.getElementById("btn_config").addEventListener("click", e => {
+			hideMenu();
+			this.showConfig()
+		})
+		document.getElementById("btn_oepn").addEventListener("click", e => this.loadLocalFile())
+		document.getElementById("btn_url").addEventListener("click", e => {
+			hideMenu();
+			this.inputURL()
+		})
+		document.getElementById("control-button-panel").addEventListener("click", e => hideMenu())
+		document.getElementById("btn_first").addEventListener("click", e => this.pageTop())
+		document.getElementById("btn_prev").addEventListener("click", e => this.pagePrev())
+		document.getElementById("btn_index").addEventListener("click", e => this.gotoIndex())
+		document.getElementById("btn_next").addEventListener("click", e => this.pageNext())
+		document.getElementById("btn_end").addEventListener("click", e => this.pageEnd())
+		document.getElementById("btn_next_episode").addEventListener("click", e => this.gotoNextEpisode())
+		document.getElementById("btn_prev_episode").addEventListener("click", e => {
+			if (this.contentsElement.hasAttribute("prev-episode")){
+				this.gotoPrevEpisode()
+			} else {
+				this.gotoIndex()
+			}
 		})
 	}
 }

@@ -1,4 +1,4 @@
-import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.15.0"
+import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.16.0"
 
 export class TxtMiruConfig {
 	constructor(txtMiru) {
@@ -16,10 +16,16 @@ export class TxtMiruConfig {
 		<input type="radio" name="config-theme-type" id="config-theme-type-light" checked><label for="config-theme-type-light">ライト(標準)</label><input type="radio" name="config-theme-type" id="config-theme-type-dark"><label for="config-theme-type-dark">ダーク</label>
 		<dt>フォントサイズ
 		<dd class="config-radio-area">
-		<input type="radio" name="config-font-size" id="config-font-size-large"><label for="config-font-size-large">大</label><input type="radio" name="config-font-size" id="config-font-size-middle" checked><label for="config-font-size-middle">中</label><input type="radio" name="config-font-size" id="config-font-size-small"><label for="config-font-size-small">小</label>
+		<input type="radio" name="config-font-size" id="config-font-size-large-p"><label for="config-font-size-large-p">大(+)</label><input type="radio" name="config-font-size" id="config-font-size-large"><label for="config-font-size-large">大</label><input type="radio" name="config-font-size" id="config-font-size-middle" checked><label for="config-font-size-middle">中</label><input type="radio" name="config-font-size" id="config-font-size-small"><label for="config-font-size-small">小</label>
 		<dt>メニューの位置
 		<dd class="config-radio-area">
 		<input type="radio" name="config-menu-position" id="config-menu-position-top" checked><label for="config-menu-position-top">上</label><input type="radio" name="config-menu-position" id="config-menu-position-bottom"><label for="config-menu-position-bottom">下</label>
+		<dt>次話、前話ボタン
+		<dd class="config-radio-area">
+		<input type="radio" name="config-show-episode" id="config-show-episode-true" checked><label for="config-show-episode-true">表示</label><input type="radio" name="config-show-episode" id="config-show-episode-false"><label for="config-show-episode-false">非表示</label>
+		<dt>目次ボタン
+		<dd class="config-radio-area">
+		<input type="radio" name="config-show-index" id="config-show-index-true" checked><label for="config-show-index-true">表示</label><input type="radio" name="config-show-index" id="config-show-index-false"><label for="config-show-index-false">非表示</label>
 		<dt>WebサーバーのURL
 		<dd><input id="config-server-url" value="">
 		<dt>WebSocketサーバーのURL
@@ -41,26 +47,38 @@ export class TxtMiruConfig {
 	}
 
 	setValue = setting => {
-		if(setting["theme"] == "light"){
+		if(setting["theme"] === "light"){
 			document.getElementById("config-theme-type-light").checked = true
 		} else if(setting["theme"] == "dark"){
 			document.getElementById("config-theme-type-dark").checked = true
 		} else {
 			document.getElementById("config-theme-type-light").checked = true
 		}
-		if(setting["font-size"] == "large"){
+		if(setting["font-size"] === "large-p"){
+			document.getElementById("config-font-size-large-p").checked = true
+		} else if(setting["font-size"] === "large"){
 			document.getElementById("config-font-size-large").checked = true
 		} else if(setting["font-size"] == "small"){
 			document.getElementById("config-font-size-small").checked = true
 		} else {
 			document.getElementById("config-font-size-middle").checked = true
 		}
-		if(setting["menu-position"] == "bottom"){
+		if(setting["menu-position"] === "bottom"){
 			document.getElementById("config-menu-position-bottom").checked = true
 		} else {
 			document.getElementById("config-menu-position-top").checked = true
 		}
-		if(setting["over18"] == "yes"){
+		if(setting["show-episode-button"] === "true"){
+			document.getElementById("config-show-episode-true").checked = true
+		} else {
+			document.getElementById("config-show-episode-false").checked = true
+		}
+		if(setting["show-index-button"] === "true"){
+			document.getElementById("config-show-index-true").checked = true
+		} else {
+			document.getElementById("config-show-index-false").checked = true
+		}
+		if(setting["over18"] === "yes"){
 			document.getElementById("config-over18-yes").checked = true
 		} else {
 			document.getElementById("config-over18-no").checked = true
@@ -125,7 +143,9 @@ export class TxtMiruConfig {
 				txtMiru.setting["theme"] = "dark"
 			}
 			//
-			if(document.getElementById("config-font-size-large").checked){
+			if(document.getElementById("config-font-size-large-p").checked){
+				txtMiru.setting["font-size"] = "large-p"
+			} else if(document.getElementById("config-font-size-large").checked){
 				txtMiru.setting["font-size"] = "large"
 			} else if(document.getElementById("config-font-size-middle").checked){
 				txtMiru.setting["font-size"] = "middle"
@@ -136,6 +156,16 @@ export class TxtMiruConfig {
 				txtMiru.setting["menu-position"] = "bottom"
 			} else {
 				txtMiru.setting["menu-position"] = "top"
+			}
+			if(document.getElementById("config-show-episode-true").checked){
+				txtMiru.setting["show-episode-button"] = "true"
+			} else {
+				txtMiru.setting["show-episode-button"] = "false"
+			}
+			if(document.getElementById("config-show-index-true").checked){
+				txtMiru.setting["show-index-button"] = "true"
+			} else {
+				txtMiru.setting["show-index-button"] = "false"
 			}
 			if(document.getElementById("config-over18-yes").checked){
 				txtMiru.setting["over18"] = "yes"

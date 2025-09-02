@@ -11,8 +11,8 @@ export class TxtMiruDB {
 			Setting: "id,value"
 		})
 	}
-	add = async item => await this.connection.insert(item)
-	select = async item => await this.connection.select(item)
+	//add = async item => await this.connection.insert(item)
+	//select = async item => await this.connection.select(item)
 	getSettingList = async () => await this.db.Setting.toArray()
 	setSetting = async (item) => {
 		if (Array.isArray(item)) {
@@ -64,10 +64,10 @@ export class TxtMiruDB {
 		}
 		return await this.db.Favorite.toArray()
 	}
-	getFavoriteByUrl = async url => {
+	getFavoriteByUrl = async (url, page_no, cur_url) => {
 		if (this.txtMiru.setting["UserID"]) {
 			const server = this.txtMiru.setting["WebServerUrl"]
-			const req_url = `${server}?${new URLSearchParams({ func: "get_favorite_by_url", uid: this.txtMiru.setting["UserID"], url: url, _no_cache_: Date.now().toString() })}`
+			const req_url = `${server}?${new URLSearchParams({ func: "get_favorite_by_url", uid: this.txtMiru.setting["UserID"], url: url, page_no: page_no, cur_url: cur_url, _no_cache_: Date.now().toString() })}`
 			return await fetch(req_url)
 				.then(response => response.json())
 				.then(json => json["values"])

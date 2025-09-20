@@ -1,10 +1,20 @@
 export class TxtMiruLoading {
-	constructor() {
+	constructor(txtMiru) {
+		this.txtMiru = txtMiru
 		this.loadingElement = document.createElement("div")
 		this.loadingElement.className = "hide-loading"
 		this.loadingElement.innerHTML = `<div class="loader"></div>`
+		this.txtMiru.fetchAbortController = new AbortController()
+	}
+	cancel = _ => {
+		try {
+			if (this.txtMiru.fetchAbortController) {
+				this.txtMiru.fetchAbortController.abort("cancel")
+			}
+		} catch{}
 	}
 	begin = messages => {
+		this.txtMiru.fetchAbortController = new AbortController()
 		this.update(messages)
 		document.body.appendChild(this.loadingElement)
 		this.loadingElement.className = "show-loading"
@@ -17,8 +27,15 @@ export class TxtMiruLoading {
 		} else {
 			this.loadingElement.innerHTML = `<div class="loader"></div>`
 		}
+		const elmq = this.loadingElement.querySelector(".marquee")
+		if (elmq && elmq.scrollHeight <= elmq.clientHeight){
+			elmq.className = "nomarquee"
+		}
+		this.loadingElement.querySelector(".loader").addEventListener("dblclick", this.cancel)
 	}
 	end = () => {
+		this.cancel()
+		this.txtMiru.fetchAbortController = null
 		this.loadingElement.className = "hide-loading"
 		if(this.loadingElement.parentElement){
 			document.body.removeChild(this.loadingElement)

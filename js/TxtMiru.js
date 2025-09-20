@@ -1,10 +1,10 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.16.0'
-import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.16.0'
-import { TxtMiruLocalFile } from './TxtMiruLocalFile.js?1.0.16.0'
-import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.16.0'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.16.0'
-import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.16.0'
-import { TxtMiruDB } from './TxtMiruDB.js?1.0.16.0'
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.17.0'
+import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.17.0'
+import { TxtMiruLocalFile } from './TxtMiruLocalFile.js?1.0.17.0'
+import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.17.0'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.17.0'
+import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.17.0'
+import { TxtMiruDB } from './TxtMiruDB.js?1.0.17.0'
 
 const TxtMiruTitle = "TxtMiru on the Web"
 // DOM
@@ -97,6 +97,7 @@ export class TxtMiru {
 		"page-scroll-effect-animation": true,
 	}
 	setting = { ...this.default_setting }
+	fetchAbortController = null
 
 	constructor(main_id) {
 		this.mainElement = document.getElementById(main_id)
@@ -117,7 +118,7 @@ export class TxtMiru {
 				}
 			}).finally(() => {
 				TxtMiruSiteManager.txtMiru = this
-				this.txtMiruLoading = new TxtMiruLoading()
+				this.txtMiruLoading = new TxtMiruLoading(this)
 				this.txtMiruLocalFile = new TxtMiruLocalFile(this)
 				this.txtMiruInputURL = new TxtMiruInputURL(this)
 				this.txtMiruFavorite = new TxtMiruFavorite(this)
@@ -538,7 +539,12 @@ export class TxtMiru {
 		}
 	}
 	//
-	LoadNovel = (url, scroll_pos = 0, no_history = false) => {
+	loading = false
+	LoadNovel = async (url, scroll_pos = 0, no_history = false) => {
+		if (this.loading) {
+			return
+		}
+		this.loading = true
 		const old_url = new URL(window.location)
 		const title = document.title
 		if (!no_history) {
@@ -559,11 +565,12 @@ export class TxtMiru {
 		this.contentsElement.setAttribute("episode-index", "")
 		if (!url) {
 			this.setTxtMiruIndexSite()
+			this.loading = false
 			return
 		}
 		//
-		this.txtMiruLoading.begin()
-		TxtMiruSiteManager.GetDocument(this, url).then(item => {
+		this.txtMiruLoading.begin(`取得中...`)
+		await TxtMiruSiteManager.GetDocument(this, url).then(item => {
 			if (item == null) {
 				return
 			}
@@ -727,6 +734,7 @@ export class TxtMiru {
 		}).finally(() => {
 			this.mainElement.focus()
 			this.txtMiruLoading.end()
+			this.loading = false
 		})
 	}
 	setButtonBind = _ => {

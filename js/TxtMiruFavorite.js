@@ -1,13 +1,13 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.16.0'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.16.0'
-import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.16.0"
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.17.0'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.17.0'
+import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.17.0"
 
 export class TxtMiruFavorite {
 	constructor(txtMiru) {
 		this.favoriteList = []
 		this.txtMiru = txtMiru
 		this.txtMiruDB = txtMiru.txtMiruDB
-		this.txtMiruLoading = new TxtMiruLoading()
+		this.txtMiruLoading = new TxtMiruLoading(txtMiru)
 		this.favoriteElement = document.createElement("div")
 		this.favoriteElement.className = "hide-favorite"
 		this.favoriteElement.innerHTML = `
@@ -289,62 +289,64 @@ export class TxtMiruFavorite {
 		// 最新情報に更新
 		document.getElementById("favorite-update").addEventListener("click", async e => {
 			this.txtMiruLoading.begin()
-			let url_list = []
-			const tr_list = document.getElementById("novel_list_body").getElementsByTagName("TR")
-			for (const tr of tr_list) {
-				if (tr.className == "check_on") {
-					const url = tr.getAttribute("url")
-					if (url) {
-						url_list.push(url)
-					}
-				}
-			}
-			if (url_list.length == 0) {
+			try {
+				let url_list = []
+				const tr_list = document.getElementById("novel_list_body").getElementsByTagName("TR")
 				for (const tr of tr_list) {
-					if (tr.getAttribute("source")) {
-						continue
-					}
-					const url = tr.getAttribute("url")
-					if (url) {
-						url_list.push(url)
-					}
-				}
-			}
-			let results = []
-			for (const site of TxtMiruSiteManager.SiteList()) {
-				results = await site.GetInfo(txtMiru, url_list, item_list => {
-					let arr = ["取得中..."]
-					for (const url of item_list) {
-						let exists = false
-						for (const tr of tr_list) {
-							if (tr.className === "loading") {
-								tr.className = "check_on"
-							}
-							if (url == tr.getAttribute("url")) {
-								tr.className = "loading"
-								arr.push(tr.getElementsByClassName("novel_title")[0].innerText)
-								exists = true
-								break
-							}
-						}
-						if (!exists) {
-							arr.push(url)
-						}
-					}
-					this.txtMiruLoading.update(arr)
-				})
-				if (results) {
-					for (const tr of tr_list) {
+					if (tr.className == "check_on") {
 						const url = tr.getAttribute("url")
-						for (const item of results) {
-							if (item.url == url) {
-								await this.txtMiruDB.setFavorite(tr.getAttribute("item_id") | 0, item)
-							}
+						if (url) {
+							url_list.push(url)
 						}
-
 					}
 				}
-			}
+				if (url_list.length == 0) {
+					for (const tr of tr_list) {
+						if (tr.getAttribute("source")) {
+							continue
+						}
+						const url = tr.getAttribute("url")
+						if (url) {
+							url_list.push(url)
+						}
+					}
+				}
+				let results = []
+				for (const site of TxtMiruSiteManager.SiteList()) {
+					results = await site.GetInfo(txtMiru, url_list, item_list => {
+						let arr = ["取得中..."]
+						for (const url of item_list) {
+							let exists = false
+							for (const tr of tr_list) {
+								if (tr.className === "loading") {
+									tr.className = "check_on"
+								}
+								if (url == tr.getAttribute("url")) {
+									tr.className = "loading"
+									arr.push(tr.getElementsByClassName("novel_title")[0].innerText)
+									exists = true
+									break
+								}
+							}
+							if (!exists) {
+								arr.push(url)
+							}
+						}
+						this.txtMiruLoading.update(arr)
+					})
+					if (results) {
+						for (const tr of tr_list) {
+							const url = tr.getAttribute("url")
+							for (const item of results) {
+								if (item.url == url) {
+									await this.txtMiruDB.setFavorite(tr.getAttribute("item_id") | 0, item)
+								}
+							}
+
+						}
+					}
+				}
+			} catch{}
 			this.txtMiruLoading.end()
 			this.reload()
 		})

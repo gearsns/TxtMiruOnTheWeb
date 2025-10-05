@@ -1,4 +1,4 @@
-import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.17.0"
+import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.18.0"
 
 export class TxtMiruConfig {
 	constructor(txtMiru) {
@@ -26,6 +26,8 @@ export class TxtMiruConfig {
 		<dt>目次ボタン
 		<dd class="config-radio-area">
 		<input type="radio" name="config-show-index" id="config-show-index-true" checked><label for="config-show-index-true">表示</label><input type="radio" name="config-show-index" id="config-show-index-false"><label for="config-show-index-false">非表示</label>
+		<dt>画面端タップでスクロール(0-100を指定:0で無効,50で画面半分の左側タップで次のページへ)
+		<dd><input id="tap-scroll-next-per" value="">%
 		<dt>WebサーバーのURL
 		<dd><input id="config-server-url" value="">
 		<dt>WebSocketサーバーのURL
@@ -77,6 +79,11 @@ export class TxtMiruConfig {
 			document.getElementById("config-show-index-true").checked = true
 		} else {
 			document.getElementById("config-show-index-false").checked = true
+		}
+		if(setting["tap-scroll-next-per"]){
+			document.getElementById("tap-scroll-next-per").value = setting["tap-scroll-next-per"]
+		} else {
+			document.getElementById("tap-scroll-next-per").value = ""
 		}
 		if(setting["over18"] === "yes"){
 			document.getElementById("config-over18-yes").checked = true
@@ -178,6 +185,7 @@ export class TxtMiruConfig {
 				txtMiru.setting["page-scroll-effect-animation"] = false
 			}
 			//
+			txtMiru.setting["tap-scroll-next-per"] = document.getElementById("tap-scroll-next-per").value
 			txtMiru.setting["WebServerUrl"] = document.getElementById("config-server-url").value
 			txtMiru.setting["WebSocketServerUrl"] = document.getElementById("config-websocket-server-url").value
 			txtMiru.setting["UserID"] = document.getElementById("config-user-id").value

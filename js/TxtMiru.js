@@ -1,10 +1,10 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.17.0'
-import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.17.0'
-import { TxtMiruLocalFile } from './TxtMiruLocalFile.js?1.0.17.0'
-import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.17.0'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.17.0'
-import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.17.0'
-import { TxtMiruDB } from './TxtMiruDB.js?1.0.17.0'
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.18.0'
+import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.18.0'
+import { TxtMiruLocalFile } from './TxtMiruLocalFile.js?1.0.18.0'
+import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.18.0'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.18.0'
+import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.18.0'
+import { TxtMiruDB } from './TxtMiruDB.js?1.0.18.0'
 
 const TxtMiruTitle = "TxtMiru on the Web"
 // DOM
@@ -23,28 +23,25 @@ const cumulativeOffset = element => {
 }
 // 文字ごとの座標を取得
 const retrieveCharactersRectsRange = (elem, left, right) => {
-	const treeWalker = document.createTreeWalker(
-		elem,
-		NodeFilter.SHOW_TEXT
-	)
-	let results = []
+	const treeWalker = document.createTreeWalker(elem, NodeFilter.SHOW_TEXT)
+	const results = []
 	while(treeWalker.nextNode())
 	{
 		const target = treeWalker.currentNode
 		if (target.parentElement && target.nodeValue.trim().length > 0) {
-			let topElementRect = target.parentElement.getBoundingClientRect()
+			const topElementRect = target.parentElement.getBoundingClientRect()
 			if (topElementRect.left <= right && topElementRect.right >= left){
 				const range = target.ownerDocument.createRange()
 				range.selectNodeContents(target)
 				range.setStart(target, 0)
 				range.setEnd(target, range.endOffset)
-				let r = range.getBoundingClientRect()
+				const r = range.getBoundingClientRect()
 				if (r.left <= right && r.right >= left && r.width > 0 && r.height > 0){
 					for (let current_pos = 0, end_pos = range.endOffset; current_pos < end_pos; ++current_pos) {
 						range.setStart(target, current_pos)
 						range.setEnd(target, current_pos + 1)
 						results.push({
-							character: range.toString(),
+							character: target.data[current_pos],
 							rect: range.getBoundingClientRect()
 						})
 					}
@@ -62,13 +59,13 @@ const retrieveCharactersRects = elem => {
 		range.selectNodeContents(elem)
 		range.setStart(elem, 0)
 		range.setEnd(elem, range.endOffset)
-		let r = range.getBoundingClientRect()
+		const r = range.getBoundingClientRect()
 		if(r.x > -100 && r.height > 0 && r.width > 0 && r.x <= window.innerWidth + 50){
 			for (let current_pos = 0, end_pos = range.endOffset; current_pos < end_pos; ++current_pos) {
 				range.setStart(elem, current_pos)
 				range.setEnd(elem, current_pos + 1)
 				results.push({
-					character: range.toString(),
+					character: elem.data[current_pos],
 					rect: range.getBoundingClientRect()
 				})
 			}
@@ -417,6 +414,17 @@ export class TxtMiru {
 	//
 	setKeyBind = () => {
 		this.isComposing = false
+		this.mainElement.addEventListener("click", e => { 
+			const r = this.setting["tap-scroll-next-per"] || 0
+			if (r && e.clientX < this.mainElement.clientWidth * (r / 100)){
+				if (e.target && e.target.tagName === "A") {
+					return
+				}
+				e.preventDefault()
+				e.stopPropagation()
+				this.pageNext()
+			}
+		})
 		document.addEventListener("compositionstart", e => { this.isComposing = true })
 		document.addEventListener("compositionend", e => { this.isComposing = false })
 		document.addEventListener("keydown", e => {
@@ -447,7 +455,7 @@ export class TxtMiru {
 				clearTimeout(this.set_scroll_pos_state_timer_id)
 			}
 			if (this.setting["delay-set-scroll-pos-state"] >= 0) {
-			this.set_scroll_pos_state_timer_id = setTimeout(this.setScrollPosState, this.setting["delay-set-scroll-pos-state"])
+				this.set_scroll_pos_state_timer_id = setTimeout(this.setScrollPosState, this.setting["delay-set-scroll-pos-state"])
 			}
 		})
 		this.mainElement.addEventListener("wheel", e => {

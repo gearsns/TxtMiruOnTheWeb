@@ -1,7 +1,7 @@
-import { TxtMiruLib } from './TxtMiruLib.js?1.0.17.0'
+import { TxtMiruLib } from './TxtMiruLib.js?1.0.18.0'
 import fetchJsonp from './lib/fetch-jsonp.js'
-import { narou2html } from './lib/narou.js?1.0.17.0'
-import { AozoraText2Html } from './lib/aozora.js?1.0.17.0'
+import { narou2html } from './lib/narou.js?1.0.18.0'
+import { AozoraText2Html } from './lib/aozora.js?1.0.18.0'
 
 const appendSlash = text => {
 	if (!text.match(/\/$/)) {

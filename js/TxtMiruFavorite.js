@@ -1,6 +1,6 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.17.0'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.17.0'
-import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.17.0"
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.18.0'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.18.0'
+import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.18.0"
 
 export class TxtMiruFavorite {
 	constructor(txtMiru) {

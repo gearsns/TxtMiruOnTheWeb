@@ -1,8 +1,8 @@
-export let TxtMiruMessageBox = {
+export const TxtMiruMessageBox = {
 	show: (message, options) => {
-		options = typeof options == "undefined" ? {} : options
+		options = typeof options === "undefined" ? {} : options
 		return new Promise((resolve, reject) => {
-			const buttons = typeof options["buttons"] == "undefined" ? ["OK"] : options["buttons"]
+			const buttons = typeof options["buttons"] === "undefined" ? ["OK"] : options["buttons"]
 			let button_html = ""
 			for(const button of buttons){
 				if(typeof button == "string"){

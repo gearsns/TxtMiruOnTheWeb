@@ -14,6 +14,7 @@ export class TxtMiruLoading {
 		} catch{}
 	}
 	begin = messages => {
+		this.cancel()
 		this.txtMiru.fetchAbortController = new AbortController()
 		this.update(messages)
 		document.body.appendChild(this.loadingElement)

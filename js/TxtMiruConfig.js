@@ -1,4 +1,4 @@
-import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.18.0"
+import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.19.0"
 
 export class TxtMiruConfig {
 	constructor(txtMiru) {
@@ -43,6 +43,10 @@ export class TxtMiruConfig {
 		<dd class="config-radio-area">
 		<input type="radio" name="config-page-scroll-effect-animation" id="config-page-scroll-effect-animation-no"><label for="config-page-scroll-effect-animation-no">NO</label>
 		<input type="radio" name="config-page-scroll-effect-animation" id="config-page-scroll-effect-animation-yes" checked><label for="config-page-scroll-effect-animation-yes">YES</label>
+		<dt>プリフェッチ処理を行う
+		<dd class="config-radio-area">
+		<input type="radio" name="config-prefetch" id="config-prefetch-no"><label for="config-prefetch-no">NO</label>
+		<input type="radio" name="config-prefetch" id="config-prefetch-yes" checked><label for="config-prefetch-yes">YES</label>
 		</dl>
 </div>`.replace(/[\r\n]/g, "")
 		document.body.appendChild(this.configElement)
@@ -115,6 +119,11 @@ export class TxtMiruConfig {
 		} else {
 			document.getElementById("config-page-scroll-effect-animation-no").checked = true
 		}
+		if(setting["page-prefetch"]){
+			document.getElementById("config-prefetch-yes").checked = true
+		} else {
+			document.getElementById("config-prefetch-no").checked = true
+		}
 	}
 	show = async (txtMiru) => {
 		if(txtMiru.display_popup){
@@ -183,6 +192,11 @@ export class TxtMiruConfig {
 				txtMiru.setting["page-scroll-effect-animation"] = true
 			} else {
 				txtMiru.setting["page-scroll-effect-animation"] = false
+			}
+			if(document.getElementById("config-prefetch-yes").checked){
+				txtMiru.setting["page-prefetch"] = true
+			} else {
+				txtMiru.setting["page-prefetch"] = false
 			}
 			//
 			txtMiru.setting["tap-scroll-next-per"] = document.getElementById("tap-scroll-next-per").value

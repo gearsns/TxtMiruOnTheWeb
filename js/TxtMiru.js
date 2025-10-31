@@ -1,10 +1,10 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.18.0'
-import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.18.0'
-import { TxtMiruLocalFile } from './TxtMiruLocalFile.js?1.0.18.0'
-import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.18.0'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.18.0'
-import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.18.0'
-import { TxtMiruDB } from './TxtMiruDB.js?1.0.18.0'
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.19.0'
+import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.19.0'
+import { TxtMiruLocalFile } from './TxtMiruLocalFile.js?1.0.19.0'
+import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.19.0'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.19.0'
+import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.19.0'
+import { TxtMiruDB } from './TxtMiruDB.js?1.0.19.0'
 
 const TxtMiruTitle = "TxtMiru on the Web"
 // DOM
@@ -80,6 +80,25 @@ const retrieveCharactersRects = elem => {
 	}
 }
 
+// getCache : loalfile
+class CacheFiles {
+	#cache = []
+	Get = url => {
+		for(const item of this.#cache){
+			if(item.url === url){
+				return item
+			}
+		}
+		return null
+	}
+	Set = item => {
+		if (this.#cache.length > 10) {
+			this.#cache.shift()
+		}
+		this.#cache.push(item)
+	}
+	SetHtml = (url, html) => this.Set({ url: url, html: html })
+}
 export class TxtMiru {
 	set_scroll_pos_state_timer_id = null
 	scroll_timer_id = null
@@ -92,9 +111,11 @@ export class TxtMiru {
 		"WebServerUrl": "https://script.google.com/macros/s/AKfycbxf6f5omc-p0kTdmyPh92wdpXv9vfQBqa9HJYtypTGD5N5Aqf5S5CWf-yQ6x6sIj4pf3g/exec",
 		"delay-set-scroll-pos-state": 10000,
 		"page-scroll-effect-animation": true,
+		"page-prefetch": true,
 	}
 	setting = { ...this.default_setting }
 	fetchAbortController = null
+	cacheFiles = new CacheFiles()
 
 	constructor(main_id) {
 		this.mainElement = document.getElementById(main_id)
@@ -127,14 +148,15 @@ export class TxtMiru {
 				this.reflectSetting()
 				//
 				const url = new URL(window.location)
-				this.LoadNovel(url.searchParams.get('url'), url.searchParams.get('scroll_pos'), true)
+				const item = this.getHistory(url.searchParams.get('url'))
+				this.LoadNovel(url.searchParams.get('url'), item['scroll_pos'], true)
 			})
 		})
 	}
-	defaultSetting = () => this.default_setting
-	reflectSetting = () => {
+	defaultSetting = _ => this.default_setting
+	reflectSetting = _ => {
 		const el = document.getElementById("TxtMiruMain")
-		let classNameList = []
+		const classNameList = []
 		for (const cn of el.className.split(/ +/)) {
 			if (!cn.match(/^zoom/)) {
 				classNameList.push(cn)
@@ -179,7 +201,7 @@ export class TxtMiru {
 				this.txtmiru_websocket.close()
 			}
 			this.txtmiru_websocket = null
-			if (!url || url.length == 0) {
+			if (!url || url.length === 0) {
 				return
 			}
 			let sock = new WebSocket(url)
@@ -187,11 +209,10 @@ export class TxtMiru {
 				try {
 					let item = JSON.parse(e.data)
 					if (item.url) {
-						const url = item.url.replace(/(#.*$)/, "")
-						const name = RegExp.$1
-						item.url = url
+						const match = item.url.match(/#.*$/)
+						item.url = item.url.replace(/#.*$/, "")
 						this.addCache(item)
-						this.LoadNovel(url, name, true)
+						this.LoadNovel(item.url, match ? match[0] : "", true)
 					} else {
 						this.addCache(item)
 					}
@@ -207,16 +228,16 @@ export class TxtMiru {
 		}
 	}
 	//
-	saveSetting = () => {
-		let item_list = []
+	saveSetting = _ => {
+		const item_list = []
 		for (const key of Object.keys(this.setting)) {
 			item_list.push({ id: key, value: this.setting[key] })
 		}
 		return this.txtMiruDB.setSetting(item_list)
 	}
 	//
-	clearCache = () => this.cache_list.length = 0
-	getCache = () => this.cache_list
+	clearCache = _ => this.cache_list.length = 0
+	getCache = _ => this.cache_list
 	addCache = item => {
 		for (let i = 0, l = this.cache_list.length; i < l; ++i) {
 			if (item.url && this.cache_list[i].url == item.url) {
@@ -330,17 +351,17 @@ export class TxtMiru {
 		requestAnimationFrame(loop)
 	}
 	// タイマー処理再スタート
-	restartScrollTimeout = () => {
+	restartScrollTimeout = _ => {
 		if (this.scroll_timer_id) {
 			clearTimeout(this.scroll_timer_id)
 			this.scroll_timer_id = setTimeout(this.scroll_timer_func, 100)
 		}
 	}
 	//
-	pagePrev = () => this.scrollPageEffect(false)
-	pageNext = () => this.scrollPageEffect(true)
-	pageTop = () => this.mainElement.scrollTo({ left: this.mainElement.scrollWidth, behavior: "smooth"})
-	pageEnd = () => this.mainElement.scrollTo({ left: -this.mainElement.scrollWidth, behavior: "smooth"})
+	pagePrev = _ => this.scrollPageEffect(false)
+	pageNext = _ => this.scrollPageEffect(true)
+	pageTop = _ => this.mainElement.scrollTo({ left: this.mainElement.scrollWidth, behavior: "smooth"})
+	pageEnd = _ => this.mainElement.scrollTo({ left: -this.mainElement.scrollWidth, behavior: "smooth"})
 	//
 	gotoAttributeUrl = name => {
 		const el = this.contentsElement
@@ -351,68 +372,89 @@ export class TxtMiru {
 			}
 		}
 	}
-	gotoNextEpisode = () => this.gotoAttributeUrl("next-episode")
-	gotoPrevEpisode = () => this.gotoAttributeUrl("prev-episode")
-	gotoIndex = () => this.gotoAttributeUrl("episode-index")
+	gotoNextEpisode = _ => this.gotoAttributeUrl("next-episode")
+	gotoPrevEpisode = _ => this.gotoAttributeUrl("prev-episode")
+	gotoIndex = _ => this.gotoAttributeUrl("episode-index")
 	//
-	setHistory = (cur_url, title) => {
-		if (!cur_url.searchParams.get("url")) {
-			return
-		}
-		let history = this.setting["history"]
-		if (history) {
-			const check_url = cur_url.searchParams.get("url")
-			let buf_history = []
-			buf_history.push({ url: cur_url.searchParams.get("url"), name: title, scroll_pos: cur_url.searchParams.get("scroll_pos") })
+	getHistory = curl_url => {
+		const history = this.setting["history"]
+		if (history){
 			for (const item of JSON.parse(history)) {
-				if (item.url !== check_url) {
-					buf_history.push(item)
+				if (item.url === curl_url) {
+					return item
 				}
 			}
-			if (buf_history.length > 5) {
-				buf_history.length = 5
+		}
+		return {}
+	}
+	setHistory = (check_url, title) => {
+		if (!check_url) {
+			return
+		}
+		const scroll_pos = this.mainElement.scrollLeft / this.mainElement.scrollWidth
+		let buf_history = [{ url: check_url, name: title, scroll_pos: scroll_pos }]
+		let r
+		if (r = check_url.match(/^(txtmiru:\/\/localfile\/[a-z0-9\-]+)/i)){
+			if (r[1] === check_url){
+				this.setting["local_history_index"] = { url: check_url, name: title }
+			}
+			const history = this.setting["local_history"]
+			if (history) {
+				for (const item of JSON.parse(history)) {
+					if (item.url !== check_url) {
+						buf_history.push(item)
+					}
+				}
+				if (buf_history.length > 5) {
+					buf_history.length = 5
+				}
+			}
+			this.setting["local_history"] = JSON.stringify(buf_history)
+		} else {
+			const history = this.setting["history"]
+			if (history) {
+				for (const item of JSON.parse(history)) {
+					if (item.url !== check_url) {
+						buf_history.push(item)
+					}
+				}
+				if (buf_history.length > 5) {
+					buf_history.length = 5
+				}
 			}
 			this.setting["history"] = JSON.stringify(buf_history)
-		} else {
-			this.setting["history"] = JSON.stringify([{ url: cur_url.searchParams.get("url"), name: title, scroll_pos: cur_url.searchParams.get("scroll_pos") }])
+			this.txtMiruDB.setSetting([{ id: "history", value: this.setting["history"] }])
 		}
-		this.txtMiruDB.setSetting([{ id: "history", value: this.setting["history"] }])
 	}
-	setScrollPosState = () => {
+	setScrollPosState = _ => {
 		clearTimeout(this.set_scroll_pos_state_timer_id)
 		const cur_url = new URL(window.location)
-		const title = document.title
-		cur_url.searchParams.set('scroll_pos', this.mainElement.scrollLeft / this.mainElement.scrollWidth)
-		const state = {
-			'TxtMiru': true
-		}
-		window.history.replaceState(state, title, cur_url)
-		this.setHistory(cur_url, title)
+		this.setHistory(cur_url.searchParams.get("url"), document.title)
 	}
 	//
-	loadLocalFile = () => this.txtMiruLocalFile.show(this)
-	inputURL = () => this.txtMiruInputURL.show(this)
+	loadLocalFile = _ => this.txtMiruLocalFile.show(this)
+	inputURL = _ => this.txtMiruInputURL.show(this)
 	//
-	showFavorite = () => this.txtMiruFavorite.show(this)
+	showFavorite = _ => this.txtMiruFavorite.show(this)
 	//
-	showConfig = () => this.txtMiruConfig.show(this)
+	showConfig = _ => this.txtMiruConfig.show(this)
 	//
 	key_mapping = {
-		"Shift+Space": (e) => this.pagePrev(),
-		"Space": (e) => this.pageNext(),
-		"PageUp": (e) => this.pagePrev(),
-		"PageDown": (e) => this.pageNext(),
-		"Home": (e) => this.pageTop(),
-		"End": (e) => this.pageEnd(),
-		"KeyL": (e) => this.inputURL(),
-		"KeyO": (e) => this.loadLocalFile(),
-		"KeyF": (e) => this.showFavorite(),
-		"KeyC": (e) => this.showConfig(),
-		"Ctrl+ArrowLeft": (e) => this.gotoNextEpisode(),
-		"Ctrl+ArrowRight": (e) => this.gotoPrevEpisode(),
+		"Shift+Space": e => this.pagePrev(),
+		"Space": e => this.pageNext(),
+		"PageUp": e => this.pagePrev(),
+		"PageDown": e => this.pageNext(),
+		"Home": e => this.pageTop(),
+		"End": e => this.pageEnd(),
+		"KeyL": e => this.inputURL(),
+		"KeyO": e => this.loadLocalFile(),
+		"KeyF": e => this.showFavorite(),
+		"KeyC": e => this.showConfig(),
+		"Ctrl+ArrowLeft": e => this.gotoNextEpisode(),
+		"Ctrl+ArrowRight": e => this.gotoPrevEpisode(),
 	}
 	//
-	setKeyBind = () => {
+	setKeyBind = _ => {
 		this.isComposing = false
 		this.mainElement.addEventListener("click", e => { 
 			const r = this.setting["tap-scroll-next-per"] || 0
@@ -457,6 +499,12 @@ export class TxtMiru {
 			if (this.setting["delay-set-scroll-pos-state"] >= 0) {
 				this.set_scroll_pos_state_timer_id = setTimeout(this.setScrollPosState, this.setting["delay-set-scroll-pos-state"])
 			}
+			if (this.prefetch && this.setting["page-prefetch"]) {
+				const scroll_pos = - this.mainElement.scrollLeft / (this.mainElement.scrollWidth - this.mainElement.clientWidth)
+				if (scroll_pos > 0.2){
+					this.CacheLoad(this.contentsElement.getAttribute("next-episode"))
+				}
+			}
 		})
 		this.mainElement.addEventListener("wheel", e => {
 			if (!this.display_popup) {
@@ -481,14 +529,16 @@ export class TxtMiru {
 	}
 	///////////////////////////////
 	// イベント
-	setEvent = () => {
+	setEvent = _ => {
 		window.addEventListener("load", e => {
 			const url = new URL(window.location)
-			this.LoadNovel(url.searchParams.get('url'), url.searchParams.get('scroll_pos'), true)
+			const item = this.getHistory(url.searchParams.get('url'),)
+			this.LoadNovel(url.searchParams.get('url'), item['scroll_pos'], true)
 		})
 		window.addEventListener("popstate", e => {
 			const url = new URL(window.location)
-			this.LoadNovel(url.searchParams.get('url'), url.searchParams.get('scroll_pos'), true)
+			const item = this.getHistory(url.searchParams.get('url'),)
+			this.LoadNovel(url.searchParams.get('url'), item['scroll_pos'], true)
 		})
 		const el_effect = document.getElementById("TxtMiruPageEffect")
 		el_effect.addEventListener("animationend", _ => { el_effect.style.display = "none" })
@@ -502,7 +552,7 @@ export class TxtMiru {
 		this.txtMiruConfig.setEvent(this)
 	}
 	//
-	setTxtMiruIndexSite = () => {
+	setTxtMiruIndexSite = _ => {
 		document.getElementById("contents").innerHTML = document.getElementById("TxtMiruTopContents").innerHTML
 		const oldPrevFunc = this.prevFunc
 		for (const el of this.mainElement.getElementsByClassName("prev-episode")) {
@@ -522,33 +572,91 @@ export class TxtMiru {
 		}
 		this.nextFunc = null
 		//
+		const addHistory = (id, item, i) => {
+			const el = document.getElementById(`${id}${i}`)
+			if (el) {
+				el.style.display = "block"
+				el.innerHTML = `${i}. <a href='${item.url}' id='${id}Anchor${i}'>${item.name}</a>`
+				const el_a = document.getElementById(`${id}Anchor${i}`)
+				el_a.addEventListener("click", e => {
+					e.preventDefault()
+					e.stopPropagation()
+					this.LoadNovel(`${item.url}`, parseFloat(item.scroll_pos))
+				})
+			}
+		}
+		let local_history = this.setting["local_history"]
+		if (local_history){
+			local_history = JSON.parse(local_history)
+			let i = 0
+			for (const item of local_history) {
+				if (item.name === "undefined"){
+					continue
+				}
+				++i
+				addHistory("TxtMiruTopContentsLocalHistory", item, i)
+			}
+			const local_history_index = this.setting["local_history_index"]
+			if (local_history_index && local_history_index.name !== "undefined"){
+				++i
+				addHistory("TxtMiruTopContentsLocalHistory", local_history_index, "Index")
+			}
+			const el = document.getElementById(`TxtMiruTopContentsLocalHistoryList`)
+			if (i > 0 && el) {
+				el.style.display = "block"
+			}
+		}
 		let history = this.setting["history"]
 		if (history) {
 			history = JSON.parse(history)
 			let i = 0
 			for (const item of history) {
 				++i
-				const el = document.getElementById(`TxtMiruTopContentsHistory${i}`)
-				if (el) {
-					el.style.display = "block"
-					el.innerHTML = `${i}. <a href='${item.url}' id='TxtMiruTopContentsHistoryAnchor${i}'>${item.name}</a>`
-					const el_a = document.getElementById(`TxtMiruTopContentsHistoryAnchor${i}`)
-					el_a.addEventListener("click", e => {
-						e.preventDefault()
-						e.stopPropagation()
-						this.LoadNovel(`${item.url}`, parseFloat(item.scroll_pos))
-					})
-				}
+				addHistory("TxtMiruTopContentsHistory", item, i)
 			}
 			const el = document.getElementById(`TxtMiruTopContentsHistoryList`)
 			if (i > 0 && el) {
 				el.style.display = "block"
 			}
 		}
+		document.title = TxtMiruTitle
+		this.mainElement.scrollTo(this.mainElement.scrollWidth, 0)
 	}
 	//
+	CacheLoad = async url => {
+		if (this.loading || this.fetchAbortController || !url){
+			return
+		}
+		url = url.replace(/#.*$/, "")
+		if (!this.cacheFiles.Get(url)){
+			const next_btn = document.getElementById("btn_next_episode")
+			next_btn.classList.remove("cached")
+			next_btn.classList.add("loading")
+			this.fetchAbortController = new AbortController()
+			await TxtMiruSiteManager.GetDocument(this, url).then(item => {
+				if (item == null) {
+					this.fetchAbortController = null
+					return
+				}
+				if (!item["nocache"] && !item["cancel"]){
+					item['url'] = url
+					this.cacheFiles.Set(item)
+				}
+				next_btn.classList.add("cached")
+				next_btn.classList.remove("loading")
+			}).catch(err => {
+				next_btn.classList.remove("cached")
+				next_btn.classList.remove("loading")
+			}).finally(_ => {
+				this.fetchAbortController = null
+			})
+		}
+	}
+	//
+	prefetch = false
 	loading = false
 	LoadNovel = async (url, scroll_pos = 0, no_history = false) => {
+		this.prefetch = false
 		if (this.loading) {
 			return
 		}
@@ -556,32 +664,31 @@ export class TxtMiru {
 		const old_url = new URL(window.location)
 		const title = document.title
 		if (!no_history) {
-			old_url.searchParams.set('scroll_pos', this.mainElement.scrollLeft / this.mainElement.scrollWidth)
-			const state = {
-				'TxtMiru': true
-			}
-			history.replaceState(state, title, old_url)
-			history.pushState(state, title, old_url)
-			this.setHistory(old_url, title)
+			this.setHistory(old_url.searchParams.get("url"), title)
 		}
 		document.getElementById("btn_index").disabled = true
 		document.getElementById("btn_next_episode").disabled = true
 		document.getElementById("btn_prev_episode").disabled = true
+		//
+		document.getElementById("btn_next_episode").classList.remove("loading")
+		document.getElementById("btn_next_episode").classList.remove("cached")
 		//
 		this.contentsElement.setAttribute("prev-episode", "")
 		this.contentsElement.setAttribute("next-episode", "")
 		this.contentsElement.setAttribute("episode-index", "")
 		if (!url) {
 			this.setTxtMiruIndexSite()
+			const new_url = new URL(window.location)
+			new_url.searchParams.delete('url')
+			if (old_url.href !== new_url.href){
+				history.pushState({'TxtMiru': true}, document.title, new_url)
+			}
 			this.loading = false
 			return
 		}
 		//
 		this.txtMiruLoading.begin(`取得中...`)
-		await TxtMiruSiteManager.GetDocument(this, url).then(item => {
-			if (item == null) {
-				return
-			}
+		const makeContents = item => {
 			for (const key of ["className", "prev-episode", "next-episode", "episode-index", "next-episode-text", "prev-episode-text", "episode-index-text"]) {
 				const v = item[key]
 				if (v == null || v == "undefined") {
@@ -589,7 +696,7 @@ export class TxtMiru {
 				}
 			}
 			const setEpisodeText = (id_text, id_url, text) => {
-				if (item[id_text].length == 0 && item[id_url].length > 0) {
+				if (item[id_text].length === 0 && item[id_url].length > 0) {
 					item[id_text] = text
 				}
 			}
@@ -600,27 +707,25 @@ export class TxtMiru {
 			setEpisodeText("next-episode-text", "next-episode", "次へ")
 			setEpisodeText("prev-episode-text", "prev-episode", "前へ")
 			setEpisodeText("episode-index-text", "episode-index", "目次へ")
-			if (item["next-episode-text"].length == 0 && item["episode-index-text"].length == 0) {
+			if (item["next-episode-text"].length === 0 && item["episode-index-text"].length === 0) {
 				setIndexHtml("next-episode-text", "next-episode")
 			}
-			if (item["prev-episode-text"].length == 0 && item["episode-index-text"].length == 0) {
+			if (item["prev-episode-text"].length === 0 && item["episode-index-text"].length === 0) {
 				setIndexHtml("prev-episode-text", "prev-episode")
 			}
-			if (item["episode-index-text"].length == 0) {
+			if (item["episode-index-text"].length === 0) {
 				setIndexHtml("episode-index-text", "episode-index")
 			}
 			if (!no_history) {
-				const state = {
-					'TxtMiru': true
-				}
 				const new_url = new URL(window.location)
 				new_url.searchParams.set('url', url)
-				new_url.searchParams.set('scroll_pos', scroll_pos)
-				window.history.replaceState(state, document.title, new_url)
+				if (old_url.href !== new_url.href){
+					history.pushState({'TxtMiru': true}, document.title, new_url)
+				}
 			}
 			this.contentsElement.className = `contents ${item["className"]}`
 			let html = item.html
-			if (html == "undefined") {
+			if (html === "undefined") {
 				html = `<P>${url}</P><P>ページにつながりませんでした。</P>`
 				setIndexHtml("next-episode-text", "next-episode")
 				setIndexHtml("prev-episode-text", "prev-episode")
@@ -634,19 +739,15 @@ export class TxtMiru {
 				let m = null
 				const href = el_a.getAttribute("href")
 				if (href && href.match(/^(?:http|https|txtmiru):\/\//i)) {
-					let support = false
 					for (let site of TxtMiruSiteManager.SiteList()) {
 						if (site.Match(href)) {
-							support = true
+							el_a.addEventListener("click", e => {
+								e.preventDefault()
+								e.stopPropagation()
+								this.LoadNovel(`${href}`)
+							})
 							break
 						}
-					}
-					if (support) {
-						el_a.addEventListener("click", e => {
-							e.preventDefault()
-							e.stopPropagation()
-							this.LoadNovel(`${href}`)
-						})
 					}
 				} else if (href && (m = href.match(/^#(.*)/))) {
 					const name = m[1]
@@ -710,6 +811,9 @@ export class TxtMiru {
 			}
 			if (item["next-episode"]) {
 				document.getElementById("btn_next_episode").disabled = false
+				if (!item["nocache"] && !item["cancel"]){
+					this.prefetch = true
+				}
 			}
 			//
 			if (typeof scroll_pos == "string") {
@@ -735,11 +839,31 @@ export class TxtMiru {
 			} else {
 				this.mainElement.scrollTo(this.mainElement.scrollWidth, 0)
 			}
-			this.setHistory(new URL(window.location), document.title)
+			document.title = item["title"]
+			this.setHistory(url, document.title)
 			this.txtMiruFavorite.setCurrentPage(this, url, item)
+		}
+		const cacheUrl = url.replace(/#.*$/, "")
+		const cache = this.cacheFiles.Get(cacheUrl)
+		if (cache){
+			makeContents(cache)
+			this.mainElement.focus()
+			this.txtMiruLoading.end()
+			this.loading = false
+			return
+		}
+		await TxtMiruSiteManager.GetDocument(this, url).then(item => {
+			if (item == null) {
+				return
+			}
+			if (!item["nocache"] && !item["cancel"]){
+				item['url'] = cacheUrl
+				this.cacheFiles.Set(item)
+			}
+			makeContents(item)
 		}).catch(err => {
 			this.setTxtMiruIndexSite()
-		}).finally(() => {
+		}).finally(_ => {
 			this.mainElement.focus()
 			this.txtMiruLoading.end()
 			this.loading = false
@@ -756,9 +880,9 @@ export class TxtMiru {
 		}
 		document.getElementById("btn_show").addEventListener("click", e => {
 			if (document.getElementById("control-button-panel").className == "show-control") {
-				hideMenu();
+				hideMenu()
 			} else {
-				showMenu();
+				showMenu()
 			}
 		})
 		document.getElementById("btn_favorite").addEventListener("click", e => {
@@ -766,12 +890,12 @@ export class TxtMiru {
 			this.showFavorite()
 		})
 		document.getElementById("btn_config").addEventListener("click", e => {
-			hideMenu();
+			hideMenu()
 			this.showConfig()
 		})
 		document.getElementById("btn_oepn").addEventListener("click", e => this.loadLocalFile())
 		document.getElementById("btn_url").addEventListener("click", e => {
-			hideMenu();
+			hideMenu()
 			this.inputURL()
 		})
 		document.getElementById("control-button-panel").addEventListener("click", e => hideMenu())
@@ -787,6 +911,12 @@ export class TxtMiru {
 			} else {
 				this.gotoIndex()
 			}
+		})
+		document.getElementById("txtmiru_top_page").addEventListener("click", e => {
+			e.preventDefault()
+			e.stopPropagation()
+			hideMenu()
+			this.LoadNovel()
 		})
 	}
 }

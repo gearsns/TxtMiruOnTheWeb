@@ -1,17 +1,17 @@
 export const narou2html = text => {
 	const isNarouRubyText = str => (str || "").match(/^[ぁ-んーァ-ヶ・　 ]*$/)
 	const totext = html => html.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-	let ret = []
+	const ret = []
 	for (const line of text.split(/\n/)) {
 		let ruby_start_index = -1
-		let line_item = []
+		const line_item = []
 		for (const target of line.split(/(｜|\||[《（\()].*?[》）\)]|<.+\|.+>)/)) {
 			const rubyStart2Text = index => {
 				if (index > 0 && line_item[index - 1].type === "ruby-start") {
 					line_item[index - 1].type = "text"
 				}
 			}
-			const setMax10character = () => {
+			const setMax10character = _ => {
 				if (line_item[ruby_start_index].text.length > 10) {
 					rubyStart2Text(ruby_start_index)
 					// 後ろの１０文字分にルビがかかります。
@@ -23,33 +23,34 @@ export const narou2html = text => {
 			}
 			const splitRuby2 = (target, text, split_type) => {
 				let item_type = "ruby"
-				if (line_item[ruby_start_index].text.match(/^(.*[　 ])(.*)([　 ])(.*)$/)) {
+				let r
+				if (r = line_item[ruby_start_index].text.match(/^(.*[　 ])(.*)([　 ])(.*)$/)) {
 					// スペースを 一つ 含む場合、分割してルビが振られます。
-					const org_text = RegExp.$1
-					const ruby_base_1 = RegExp.$2
-					const ruby_base_2 = RegExp.$4
-					const space = RegExp.$3
-					if (text.match(/^(.*)([　 ])(.*)$/)) {
+					const org_text = r[1]
+					const ruby_base_1 = r[2]
+					const ruby_base_2 = r[4]
+					const space = r[3]
+					if (r = text.match(/^(.*)([　 ])(.*)$/)) {
 						const org_ruby_start_index = ruby_start_index
-						text = RegExp.$3
+						text = r[3]
 						line_item[ruby_start_index].text = org_text
 						line_item.push({ type: "text", text: ruby_base_1 })
 						ruby_start_index = line_item.length - 1
-						line_item.push({ type: "ruby", text: RegExp.$1, start: ruby_start_index })
+						line_item.push({ type: "ruby", text: r[1], start: ruby_start_index })
 						line_item.push({ type: "text", text: "　"/*space*/ })
 						line_item.push({ type: "text", text: ruby_base_2 })
 						ruby_start_index = line_item.length - 1
 						rubyStart2Text(org_ruby_start_index)
 					}
-				} else if (split_type === 1 && line_item[ruby_start_index].text.match(/^(.*)([　 ])(.*)$/)) {
+				} else if (split_type === 1 && (r = line_item[ruby_start_index].text.match(/^(.*)([　 ])(.*)$/))) {
 					// スペースを 一つ 含む場合、分割してルビが振られます。
-					const ruby_base_1 = RegExp.$1
-					const ruby_base_2 = RegExp.$3
-					const space = RegExp.$2
-					if (text.match(/^(.*)([　 ])(.*)$/)) {
-						text = RegExp.$3
+					const ruby_base_1 = r[1]
+					const ruby_base_2 = r[3]
+					const space = r[2]
+					if (r = text.match(/^(.*)([　 ])(.*)$/)) {
+						text = r[3]
 						line_item[ruby_start_index].text = ruby_base_1
-						line_item.push({ type: "ruby", text: RegExp.$1, start: ruby_start_index })
+						line_item.push({ type: "ruby", text: r[1], start: ruby_start_index })
 						line_item.push({ type: "text", text: "　"/*space*/ })
 						line_item.push({ type: "text", text: ruby_base_2 })
 						ruby_start_index = line_item.length - 1
@@ -69,17 +70,18 @@ export const narou2html = text => {
 			}
 			const autoDetectRubyBase = (target, text) => {
 				let item_type = "ruby"
+				let r
 				if ((text.match(/[　 ]/g) || []).length >= 2) {
 					item_type = "text"
 					rubyStart2Text(ruby_start_index)
 				} else if (text.match(/[　 ].+/)) {
 					// 々 及び 〇(ゼロ) は漢字として認識させない
-					let pattern = '(.*?)((?:[一-龠仝〆ヶ]|[-_@0-9a-zA-Z]|[—―＿＠０-９Ａ-Ｚａ-ｚ　 ])+)$'
+					const pattern = '(.*?)((?:[一-龠仝〆ヶ]|[-_@0-9a-zA-Z]|[—―＿＠０-９Ａ-Ｚａ-ｚ　 ])+)$'
 					const re = new RegExp(pattern, 'g')
 					const pre_text = line_item[line_item.length - 1].text
-					if (pre_text.match(re)) {
-						line_item[line_item.length - 1].text = RegExp.$1
-						line_item.push({ type: "text", text: RegExp.$2 })
+					if (r = pre_text.match(re)) {
+						line_item[line_item.length - 1].text = r[1]
+						line_item.push({ type: "text", text: r[2] })
 						ruby_start_index = line_item.length - 1
 						setMax10character()
 						return splitRuby2(target, text, 1)
@@ -88,12 +90,12 @@ export const narou2html = text => {
 					}
 				} else {
 					// 々 及び 〇(ゼロ) は漢字として認識させない
-					let pattern = '(.*?)((?:[一-龠仝〆ヶ]|[-_@0-9a-zA-Z]|[—―＿＠０-９Ａ-Ｚａ-ｚ])+)$'
+					const pattern = '(.*?)((?:[一-龠仝〆ヶ]|[-_@0-9a-zA-Z]|[—―＿＠０-９Ａ-Ｚａ-ｚ])+)$'
 					const re = new RegExp(pattern, 'g')
 					const pre_text = line_item[line_item.length - 1].text
-					if (pre_text.match(re)) {
-						line_item[line_item.length - 1].text = RegExp.$1
-						line_item.push({ type: "text", text: RegExp.$2 })
+					if (r = pre_text.match(re)) {
+						line_item[line_item.length - 1].text = r[1]
+						line_item.push({ type: "text", text: r[2] })
 						ruby_start_index = line_item.length - 1
 						setMax10character()
 					} else {
@@ -103,13 +105,14 @@ export const narou2html = text => {
 				return [text, item_type]
 			}
 			//
-			if (target.match(/^<(.*)\|(.*)>$/)) {
-				const icode = RegExp.$1
-				const userid = RegExp.$2
+			let r
+			if (r = target.match(/^<(.*)\|(.*)>$/)) {
+				const icode = r[1]
+				const userid = r[2]
 				line_item.push({ type: "tag", text: `<a href="https://${userid}.mitemin.net/${icode}" target="_blank"><img src="https://${userid}.mitemin.net/userpageimage/viewimagebin/icode/${icode}" alt="挿絵(by みてみん)" border="0"></a>` })
-			} else if (target.match(/^《(.*?)[）\)》]$/)) {
+			} else if (r = target.match(/^《(.*?)[）\)》]$/)) {
 				let item_type = "ruby"
-				let text = RegExp.$1
+				let text = r[1]
 				if (text.length > 20) {
 					// ｜を使った場合でも、自動ルビ化でも、 ルビ 部分が２０文字を超えるとルビ化はされません。
 					if (ruby_start_index >= 0) {
@@ -150,9 +153,9 @@ export const narou2html = text => {
 					line_item.push({ type: item_type, text: target })
 				}
 				ruby_start_index = -1
-			} else if (target.match(/^[（\()](.*?)[）\)》]$/)) {
+			} else if (r = target.match(/^[（\()](.*?)[）\)》]$/)) {
 				let item_type = "ruby"
-				let text = RegExp.$1
+				let text = r[1]
 				if (text.length > 20) {
 					// ｜を使った場合でも、自動ルビ化でも、 ルビ 部分が２０文字を超えるとルビ化はされません。
 					if (ruby_start_index >= 0) {
@@ -218,7 +221,7 @@ export const narou2html = text => {
 		}
 		ret.push(line_item)
 	}
-	let html_arr = []
+	const html_arr = []
 	for (const line_item of ret) {
 		html_arr.push("<p>")
 		for (const item of line_item) {

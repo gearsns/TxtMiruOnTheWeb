@@ -13,60 +13,53 @@ export class TxtMiruInputURL {
 <button id="jump-url-close" class="seigaiha_blue">閉じる</button>
 </div></div>`
 		document.body.appendChild(this.urlElement)
+		this.setEvent()
 	}
-	show = (txtMiru) => {
-		if (txtMiru.display_popup) {
+	show = _ => {
+		if (this.txtMiru.display_popup) {
 			return
 		}
-		txtMiru.display_popup = true
+		this.txtMiru.display_popup = true
 		this.urlElement.className = "show-input-url"
-		const url = (new URL(window.location)).searchParams.get('url')
-		if (url == null) {
-			document.getElementById("input-url").value = ""
-		} else {
-			document.getElementById("input-url").value = url
-		}
-		document.getElementById("input-url").focus()
-		document.getElementById("input-url").select()
+		const el = document.getElementById("input-url")
+		el.value = (new URL(window.location)).searchParams.get('url') || ""
+		el.focus()
+		el.select()
 	}
-	jump = (txtMiru) => {
+	hideUrl = _ => {
+		this.urlElement.className = "hide-input-url"
+		this.txtMiru.display_popup = false
+	}
+	jump = _ => {
 		let url = document.getElementById("input-url").value
 		if (url.match(/^n/)) {
 			url = `https://ncode.syosetu.com/${url}`
 		}
-		txtMiru.LoadNovel(url)
-		this.urlElement.className = "hide-input-url"
-		txtMiru.display_popup = false
+		this.txtMiru.LoadNovel(url)
+		this.hideUrl()
 	}
-	setEvent = (txtMiru) => {
+	setEvent = _ => {
 		this.isComposing = false
 		document.getElementById("input-url").addEventListener("compositionstart", e => { this.isComposing = true })
 		document.getElementById("input-url").addEventListener("compositionend", e => { this.isComposing = false })
 		document.getElementById("input-box-inner").addEventListener("click", e => {
 			e.stopPropagation()
 		}, false)
-		document.getElementById("input-box-outer").addEventListener("click", e => {
-			this.urlElement.className = "hide-input-url"
-			txtMiru.display_popup = false
-		})
-		document.getElementById("jump-url-close").addEventListener("click", e => {
-			this.urlElement.className = "hide-input-url"
-			txtMiru.display_popup = false
-		})
+		document.getElementById("input-box-outer").addEventListener("click", this.hideUrl)
+		document.getElementById("jump-url-close").addEventListener("click", this.hideUrl)
 		document.getElementById("input-url").addEventListener("keydown", e => {
 			if (!this.isComposing) {
-				if (e.code == "Enter" || e.code == "NumpadEnter") {
-					this.jump(txtMiru)
+				if (e.code === "Enter" || e.code === "NumpadEnter") {
+					this.jump()
 					e.preventDefault()
 					e.stopPropagation()
-				} else if (e.code == "Escape") {
-					this.urlElement.className = "hide-input-url"
-					txtMiru.display_popup = false
+				} else if (e.code === "Escape") {
+					this.hideUrl()
 					e.preventDefault()
 					e.stopPropagation()
 				}
 			}
 		})
-		document.getElementById("jump-url").addEventListener("click", e => this.jump(txtMiru))
+		document.getElementById("jump-url").addEventListener("click", this.jump)
 	}
 }

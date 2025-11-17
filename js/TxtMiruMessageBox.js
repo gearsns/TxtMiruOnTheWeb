@@ -5,7 +5,7 @@ export const TxtMiruMessageBox = {
 			const buttons = typeof options["buttons"] === "undefined" ? ["OK"] : options["buttons"]
 			let button_html = ""
 			for(const button of buttons){
-				if(typeof button == "string"){
+				if(typeof button === "string"){
 					button_html += `<button value="${button}">${button}</button>`
 				} else {
 					button_html += `<button class="${button.className}" value="${button.value}">${button.text}</button>`

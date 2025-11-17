@@ -32,7 +32,7 @@ export const AozoraText2Html = (text, cur_command = "title") => {
 		let text = ""
 		for (let i = 0; i < index; ++i) {
 			const item = arr[i]
-			if (item.type == "text") {
+			if (item.type === "text") {
 				text += item.text
 			}
 		}
@@ -193,7 +193,7 @@ export const AozoraText2Html = (text, cur_command = "title") => {
 		const line_item = ret[line_no]
 		const line = []
 		for (const item of line_item) {
-			if (item.type == "text") {
+			if (item.type === "text") {
 				line.push(item.text)
 			}
 		}
@@ -205,7 +205,7 @@ export const AozoraText2Html = (text, cur_command = "title") => {
 		for (let i = 0; i < line_item.length; ++i) {
 			const item = line_item[i]
 			let r
-			if (item.type == "command") {
+			if (item.type === "command") {
 				if (r = item.text.match(/［＃(.*)（(fig.+\.png)(、横([0-9]+)×縦([0-9]+))*）入る］/)) {
 					const alt = r[1]
 					const src = r[2]
@@ -216,7 +216,7 @@ export const AozoraText2Html = (text, cur_command = "title") => {
 					addCommand(commands, frontText(line_item, i).length, "image", `src="${src}" class="illustration" alt="${item.row ? alt : escapeHtml(alt)}"`)
 				} else if(r = item.text.match(/［＃(.*)（(data:image\/.+)）入る］/)){
 					const alt = r[1]
-					const src = r[$2]
+					const src = r[2]
 					addCommand(commands, frontText(line_item, i).length, "image", `src="${src}" class="illustration" alt="${item.row ? alt : escapeHtml(alt)}"`)
 				} else if (r = item.text.match(/［＃ここから(?:(.*)字下げ|(改行天付き))、折り返して(.*)字下げ］/)) {
 					let number_1 = r[1] || r[2]
@@ -225,7 +225,7 @@ export const AozoraText2Html = (text, cur_command = "title") => {
 						addCommand(commands, frontText(line_item, i).length, "/div", "")
 					}
 					jisage_open = true
-					number_1 = number_1 == "改行天付き" ? 0 : toHanNum(number_1)
+					number_1 = number_1 === "改行天付き" ? 0 : toHanNum(number_1)
 					number_2 = toHanNum(number_2)
 					addCommand(commands, frontText(line_item, i).length, "div", `class="burasage" style="--burasage:${number_2}em; --burasage-turn:${number_1 - number_2}em;"`)
 				} else if (r = item.text.match(/［＃ここから(.*)字詰め］/)) {
@@ -361,7 +361,7 @@ export const AozoraText2Html = (text, cur_command = "title") => {
 						}
 					}
 				}
-			} else if (item.type == "ruby") {
+			} else if (item.type === "ruby") {
 				if (item.start >= 0) {
 					const start = frontText(line_item, item.start).length
 					pre_ruby_end_index = frontText(line_item, i).length
@@ -388,17 +388,17 @@ export const AozoraText2Html = (text, cur_command = "title") => {
 					const a_t = tagOrder(a.tag)
 					const b_t = tagOrder(b.tag)
 					let r = a_t - b_t
-					if (r == 0) {
+					if (r === 0) {
 						r = (b.length || (max_len * b_t)) - (a.length || (max_len * a_t))
 					}
 					return r
 				})
 				for (const command of commands[index]) {
-					if (command.tag == "UNICODE CHAR") {
+					if (command.tag === "UNICODE CHAR") {
 						text_arr[text_arr.length - 1] = `${command.text}`
-					} else if (command.tag == "image") {
+					} else if (command.tag === "image") {
 						text_arr.push(`<image ${command.text}/><br />`)
-					} else if (command.tag == "GAIJI IMAGE") {
+					} else if (command.tag === "GAIJI IMAGE") {
 						text_arr[text_arr.length - 1] = `<image ${command.text} />`
 					} else if (command.tag.match(/\//)) {
 						text_arr.push(`${command.text}<${command.tag}>`)
@@ -420,16 +420,16 @@ export const AozoraText2Html = (text, cur_command = "title") => {
 		appendTag(text_arr, commands, chr_arr_length, chr_arr_length)
 		// 一行ごとの変換結果を追加
 		const text = text_arr.join("")
-		if (cur_command == "title") {
+		if (cur_command === "title") {
 			text_list.push(`<h1 class="title">${text}</h1>`)
 			cur_command = "author"
-		} else if (cur_command == "author") {
-			if (text.length == 0) {
+		} else if (cur_command === "author") {
+			if (text.length === 0) {
 				cur_command = "contents"
 			} else {
 				text_list.push(`<h2 class="author">${text}</h2>`)
 			}
-		} else if (text_arr.length > 0 && chr_arr_length == 0 || text.match(/^<(?:h[0-9]+|div)/i)) {
+		} else if (text_arr.length > 0 && chr_arr_length === 0 || text.match(/^<(?:h[0-9]+|div)/i)) {
 			text_list.push(`${text}`)
 		} else {
 			text_list.push(`${text}<br />`)

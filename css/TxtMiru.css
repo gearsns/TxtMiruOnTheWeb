@@ -1,4 +1,4 @@
-@import url(./loaders.css?1.0.19.0);
+@import url(./loaders.css?1.0.19.3);
 @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Noto+Serif+JP:wght@400;700&display=swap");
 
 :root {
@@ -275,6 +275,37 @@ p {
     font-feature-settings: "palt";
     line-break: strict;
     hanging-punctuation: force-end;
+}
+
+.TxtMiruTop .novel_title {
+    font-size: 1.2em;
+    padding-top: 0.8em;
+    padding-right: 1.2em;
+    padding-left: 1.2em;
+    font-weight: bold;
+}
+
+.TxtMiruTop .chapter_title {
+    padding-top: 0.8em;
+    padding-right: 1.2em;
+    padding-left: 1.2em;
+    font-weight: bold;
+    background: #eeeee2;
+}
+
+.TxtMiruTop .novel_sublist {
+    border-left: 1px solid #ddddd0;
+}
+
+.TxtMiruTop table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+.TxtMiruTop table td,
+.TxtMiruTop table th {
+    border: 1px solid #ddddd0;
+    padding: 6px 13px;
 }
 
 .vertical .tatechuyoko_top {
@@ -891,10 +922,6 @@ p {
     background-color: rgb(211, 231, 222) !important;
 }
 
-
-/**/
-
-
 /**/
 
 .hide-config {
@@ -1199,6 +1226,14 @@ button.goto2:hover {
         opacity: 0.0;
     }
 }
+
+.TxtMiruTopContentsLocalHistory .novel_sublist, .TxtMiruTopContentsHistory .novel_sublist {
+    list-style: cjk-ideographic;
+    margin-top: 2rem;
+}
+.TxtMiruTopContentsLocalHistory .novel_sublist a, .TxtMiruTopContentsHistory .novel_sublist a {
+    text-decoration: none !important;
+}
 /**/
 
 .Narou #novel_header,
@@ -1279,8 +1314,29 @@ button.goto2:hover {
     border-left: 1px solid #ddddd0;
 }
 
-.Narou dt.long_update {
+.Narou .subtitles li.chapter, .Narou .p-eplist__chapter-title {
+    margin-top: -2rem;
+    padding: 1rem 1rem 0 1rem;
+    font-weight: bold;
+    padding-top: 0.8em;
+    padding-right: 1.2em;
+    padding-left: 1.2em;
+    font-weight: bold;
+    background: #eeeee2;
+}
+
+.Narou .subtitles li, .Narou .p-eplist__sublist {
+    list-style-type: none;
+    border-right : 1px solid #ddddd0
+}
+
+.Narou .subtitles li a, .Narou a.p-eplist__subtitle, .Narou a:has(h1.title) {
+    text-decoration: none !important;
+}
+
+.Narou .subtitles li .long_update, .Narou .p-eplist__update {
     text-align: right;
+    display: block;
 }
 
 .Narou .novel_bn {
@@ -1414,6 +1470,30 @@ button.goto2:hover {
     transform: translate3d(0.95em, 0.125em, 0) scale(0.4);
 }
 
+.Kakuyomu .subtitles li.chapter {
+    margin-top: -2rem;
+    padding: 1rem 1rem 0 1rem;
+    font-weight: bold;
+    padding-top: 0.8em;
+    padding-right: 1.2em;
+    padding-left: 1.2em;
+    font-weight: bold;
+    background: #eeeee2;
+}
+
+.Kakuyomu .subtitles li {
+    list-style-type: none;
+    border-right : 1px solid #ddddd0
+}
+
+.Kakuyomu .subtitles li a {
+    text-decoration: none !important;
+}
+
+.Kakuyomu .subtitles li .long_update {
+    text-align: right;
+    display: block;
+}
 
 /**/
 
@@ -1664,6 +1744,10 @@ button.goto2:hover {
     background: #eeeee2;
 }
 
+.Aozora .subtitle a, .Aozora a:has(h1.title) {
+    text-decoration: none !important;
+}
+
 .Aozora #novel_contents .novel_subtitle {
     padding-right: 0.8em;
     padding-left: 0.8em;
@@ -1742,32 +1826,6 @@ button.goto2:hover {
 
 /**/
 
-.Hameln form,
-.Hameln .tweetbtn,
-.Hameln a[href*="#"]
-{
-    display: none;
-}
-
-.Hameln .title
-{
-    font-size: 1.2em;
-    padding-right: 1.2em;
-    padding-left: 1.2em;
-    font-weight: bold;
-    display: block;
-}
-
-.Hameln .author
-{
-    display: block;
-    font-size: 1.2em;
-    text-align: right;
-    font-weight: bold;
-}
-
-/**/
-
 .Akatsuki #contents-inner2 > p,
 .Akatsuki a[href*="#"],
 .Akatsuki a[href*="twitter"]
@@ -1806,112 +1864,10 @@ button.goto2:hover {
 
 /**/
 
-.Everystar .pcLayoutSideLeft,
-.Everystar .pcLayoutSideRight,
-.Everystar .footer,
-.Everystar .bodyHeader,
-.Everystar .bodyFooter,
-.Everystar .button,
-.Everystar .promoteBookshelf,
-.Everystar .info,
-.Everystar .meta,
-.Everystar button
-{
-    display: none;
-}
-
-.Everystar .title
-{
-    font-size: 1.2em;
-    padding-right: 1.2em;
-    padding-left: 1.2em;
-    font-weight: bold;
-    display: block;
-}
-
-.Everystar .nickname
-{
-    display: block;
-    font-size: 1.2em;
-    text-align: right;
-    font-weight: bold;
-}
-
-.Everystar .novelOutlines,
-.Everystar .content
-{
-    margin: 0;
-    line-height: 1.8;
-    text-align: justify;
-    text-justify: inter-ideograph;
-    font-feature-settings: "palt";
-    line-break: strict;
-    hanging-punctuation: force-end;
-    white-space: pre-wrap;
-}
-
-.Everystar .novel-toc-episode {
-    border-left: 1px solid #ddddd0;
-}
-
-/**/
-
-.Magnet .title
-{
-    font-size: 1.2em;
-    padding-right: 1.2em;
-    padding-left: 1.2em;
-    font-weight: bold;
-    display: block;
-}
-
-.Magnet .author
-{
-    display: block;
-    font-size: 1.2em;
-    text-align: right;
-    font-weight: bold;
-}
-
-.Magnet .main
-{
-    margin: 0;
-    line-height: 1.8;
-    text-align: justify;
-    text-justify: inter-ideograph;
-    font-feature-settings: "palt";
-    line-break: strict;
-    hanging-punctuation: force-end;
-    white-space: pre-wrap;
-}
-
-.Magnet .novel-subtitle {
-    font-size: 1.2em;
-    padding-right: 1.2em;
-    padding-left: 1.2em;
-    font-weight: bold;
-}
-
-.Magnet .novel-toc-episode {
-    border-left: 1px solid #ddddd0;
-}
-
-/**/
-
 .TxtMiruCache p 
 {
     white-space: pre-wrap;
     min-width: 1.7em;
-}
-
-.TxtMiruCache p.current_line,
-.TxtMiruCache span.current_line
-{
-    border-top: 2px solid #18b7cd;
-    margin-top:  -10px;
-    padding-top: 8px;
-    display: block;
-    overflow-wrap: anywhere;
 }
 
 .TxtMiruCache em {
@@ -1949,7 +1905,7 @@ button.goto2:hover {
     font-weight: bold;
 }
 
-.Pixiv .main
+.Pixiv#contents
 {
     margin: 0;
     line-height: 1.8;
@@ -1982,6 +1938,10 @@ button.goto2:hover {
     color: black;
     text-decoration: none;
     text-orientation: sideways;
+}
+
+.Pixiv .novel-toc-episode a {
+    text-decoration: none !important;
 }
 
 .NovelupPlus #header,

@@ -49,6 +49,21 @@ body.dark .menu-trigger:hover {
     /* #18b7cd;*/
 }
 
-body.dark .TxtMiru .chapter_title {
-    color: #757575;
+body.dark .TxtMiru .chapter_title,
+body.dark .Narou .subtitles li.chapter, 
+body.dark .Narou .p-eplist__chapter-title,
+body.dark .Kakuyomu .subtitles li.chapter {
+    color: #d1cfcf;
+    background-color: #555045be;
+}
+body.dark .Narou .subtitles li, 
+body.dark .Narou .p-eplist__sublist,
+body.dark .Kakuyomu .subtitles li  {
+    border-right : 1px solid #555045be
+}
+
+body.dark a.txtmiru_pager,
+body.dark a.c-pager__item
+{
+    color: rgb(45, 56, 100) !important;
 }

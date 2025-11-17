@@ -24,7 +24,7 @@ const split_str = (str, separator) => {
 }
 const convertAbsoluteURL = (base_url, url) => {
 	if (url.match(/^\/\//)) {
-		let m = base_url.match(/^.*:/)
+		const m = base_url.match(/^.*:/)
 		if (m) {
 			return `${m[0]}${url}`
 		}
@@ -132,21 +132,6 @@ const escape_mark_list = nodes => {
 		escape_mark(nodes[i])
 	}
 }
-const get_tatechuuyoko_top_parent = node => {
-	if (node) {
-		if (node.nodeName === "#document" || node.className === "tatechuyoko_top") {
-			return null
-		} else if (
-			node.tagName === "BODY"
-			|| node.tagName === "DIV"
-			|| node.tagName === "P"
-		) {
-			return node
-		}
-		return get_tatechuuyoko_top_parent(node.parentNode)
-	}
-	return null
-}
 const tatechuuyoko_num = node => {
 	if (node.nodeType === 3) {
 		if (node.parentNode.className === "tatechuyoko"
@@ -206,7 +191,7 @@ const tatechuuyoko_num = node => {
 	tatechuuyoko_num_list(node.childNodes)
 	return 0
 }
-const tatechuuyoko_num_list = (nodes) => {
+const tatechuuyoko_num_list = nodes => {
 	for (let i = 0; i < nodes.length; ++i) {
 		const num = tatechuuyoko_num(nodes[i])
 		if (num > 0) {
@@ -236,12 +221,9 @@ const tatechuuyoko_symbol = node => {
 						.replace(/⁈/g, "?!")
 						.replace(/⁇/g, "??")
 						.replace(/⁉/g, "!?")
-					let arr2 = []
-					if (text.length > 3) {
-						arr2 = text.match(/[\s\S]{1,2}/g) || []
-					} else {
-						arr2 = [text]
-					}
+					const arr2 = (text.length > 3)
+						? (text.match(/[\s\S]{1,2}/g) || [])
+						: [text]
 					if (novert) {
 						item_list.push(document.createTextNode(arr2.join("")))
 					} else {
@@ -293,7 +275,7 @@ const yakumono_space = node => {
 	if (node.nodeType === 3) {
 		//let re_yakumono_space = /([（〔「『［【〈《‘“）〕」』』］】〉》’”。．、，]+)/g
 		const re_yakumono_space = /([（〔「『［【〈《）〕」』］】〉》。．、，]+)/g
-		if (node.parentNode.className === "yakumo_spacing"
+		if (node.parentNode.className === "yakumono_spacing"
 			|| !node.nodeValue.match(re_yakumono_space)) {
 			return
 		}
@@ -307,9 +289,9 @@ const yakumono_space = node => {
 					if (text.length >= 2) {
 						const elm_yakumono = document.createElement("span")
 						elm_yakumono.className = "yakumono_spacing"
-						elm_yakumono.appendChild(document.createTextNode(text.substr(0, text.length - 1)))
+						elm_yakumono.appendChild(document.createTextNode(text.substring(0, text.length - 1)))
 						item_list.push(elm_yakumono)
-						item_list.push(document.createTextNode(text.substr(text.length - 1, 1)))
+						item_list.push(document.createTextNode(text.substring(text.length - 1, text.length)))
 					} else {
 						item_list.push(document.createTextNode(text))
 					}
@@ -415,8 +397,8 @@ const convert_ruby = doc => {
 				}
 			}
 			let style_list = []
-			for (const key of Object.keys(styles)) {
-				style_list.push(`${key}:${styles[key]}`)
+			for (const [key, value] of Object.entries(styles)) {
+				style_list.push(`${key}:${value}`)
 			}
 			item.style = style_list.join(";")
 		}
@@ -424,7 +406,7 @@ const convert_ruby = doc => {
 }
 // rubyをinline-blockにすると禁則処理が正しく処理されないので、rubyと一緒に行頭・行末禁則文字をspanで囲む
 const counterJapaneseHyphenation = doc => {
-	let nodes = []
+	const nodes = []
 	for (const el of doc.querySelectorAll("[data-ruby]")) {
 		nodes.push(el)
 	}
@@ -452,9 +434,9 @@ const counterJapaneseHyphenation = doc => {
 		} else if (nextNode && nextNode.nodeType === 1 && nextNode.className === "yakumono_spacing") {
 			nextMoveNode = nextNode
 		}
-		if (previousText.length == 0 && el.className == "tatechuyoko"
+		if (previousText.length === 0 && el.className === "tatechuyoko"
 			&& el.innerText.match(/[‼‼︎！？⁈⁇⁉\!\?]/)
-			&& previousNode && previousNode.nodeType === 3 && (m = previousNode.nodeValue.match(/(.[,\)\]｝、）〕〉》」』】〙〗〟’”．，｠»ゝゞーァィゥェォッャュョヮヵヶぁぃぅぇぉっゃゅょゎゕゖㇰㇱㇲㇳㇴㇵㇶㇷㇸㇹㇷ゚ㇺㇻㇼㇽㇾㇿ々〻\-\‐゠–〜～\?!‼⁇⁈⁉・:;\/。.]*$)/))) {
+			&& previousNode && previousNode.nodeType === 3 && (m = previousNode.nodeValue.match(/((?:[\(\[（｛〔〈《「『【〘〖〝‘“｟«]+|.)[,\)\]｝、）〕〉》」』】〙〗〟’”．，｠»ゝゞーァィゥェォッャュョヮヵヶぁぃぅぇぉっゃゅょゎゕゖㇰㇱㇲㇳㇴㇵㇶㇷㇸㇹㇷ゚ㇺㇻㇼㇽㇾㇿ々〻\-\‐゠–〜～\?!‼⁇⁈⁉・:;\/。.]*$)/))) {
 			previousText = m[1] // RegExp.$1
 			previousNode.nodeValue = previousNode.nodeValue.slice(0, -previousText.length)
 		}
@@ -503,7 +485,6 @@ export class TxtMiruLib {
 		convert_ruby(doc)
 		escape_mark_list(nodes)
 		convert_tatechuuyoko_num(doc)
-		yakumono_space_list(nodes)
 		counterJapaneseHyphenation(doc)
 		convertElementsURL(doc, url)
 		for (const el_p of doc.getElementsByTagName("P")) {
@@ -529,5 +510,13 @@ export class TxtMiruLib {
 			script.onerror = () => reject(new Error("Script load error: " + src))
 			document.head.append(script)
 		})
+	}
+	static EscapeHtml = text => text.replace(/[&'`"<>]/g, match => {
+		return { '&': '&amp;', "'": '&#x27;', '`': '&#x60;', '"': '&quot;', '<': '&lt;', '>': '&gt;', }[match]
+	})
+	static PreventEverything = e => {
+		e.preventDefault()
+		e.stopPropagation()
+		e.stopImmediatePropagation()
 	}
 }

@@ -1,47 +1,52 @@
-import { TxtMiruLib } from './TxtMiruLib.js?1.0.19.0'
+import { TxtMiruLib } from './TxtMiruLib.js?1.0.19.3'
 import fetchJsonp from './lib/fetch-jsonp.js'
-import { narou2html } from './lib/narou.js?1.0.19.0'
-import { AozoraText2Html } from './lib/aozora.js?1.0.19.0'
+import { narou2html } from './lib/narou.js?1.0.19.3'
+import { AozoraText2Html } from './lib/aozora.js?1.0.19.3'
 
-const appendSlash = text => {
-	if (!text.match(/\/$/)) {
-		text += "/"
-	}
-	return text
-}
+const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time))
+const appendSlash = text => text.match(/\/$/) ? text : text + "/"
 const removeSlash = text => text.replace(/\/$/, "")
-
-//const getChildFullLevel = node => {
-//	let arr = []
-//	if (node instanceof Array) {
-//		for (const n of node) {
-//			arr = arr.concat(getChildFullLevel(n))
-//		}
-//		return arr
-//	}
-//	if (!node.childNodes) {
-//		return arr
-//	}
-//	for (const child of node.childNodes) {
-//		arr.push(child)
-//		if (child.nodeType === 1) {
-//			arr = arr.concat(getChildFullLevel(child))
-//		}
-//	}
-//	return arr
-//}
-
-const hasParentClassName = (node, name) => {
-	const p = node.parentNode
-	if (p) {
-		if (p.className === name) {
-			return true
+const removeNodes = remove_nodes => {
+	for (const e of remove_nodes) {
+		if (e && e.parentNode) {
+			e.parentNode.removeChild(e)
 		}
-		return hasParentClassName(p, name)
 	}
-	return false
 }
-
+const setItemEpisodeText = (id, href, text, item) => {
+	item[id] = href
+	item[`${id}-text`] = text
+}
+const setItemEpisodeElement = (id, el_a, item) => setItemEpisodeText(id, el_a.href, el_a.textContent, item)
+const checkForcePager = (doc, item) => {
+	const elTxtMiruCurPage = doc.getElementById("TxtMiruCurPage")
+	const elTxtMiruPrevPage = doc.getElementById("TxtMiruPrevPage")
+	const elTxtMiruTocPage = doc.getElementById("TxtMiruTocPage")
+	const elTxtMiruNextPage = doc.getElementById("TxtMiruNextPage")
+	if (elTxtMiruCurPage) {
+		item["page_no"] = elTxtMiruCurPage.getAttribute("page_no")
+	}
+	if (elTxtMiruPrevPage) {
+		setItemEpisodeElement("prev-episode", elTxtMiruPrevPage, item)
+	}
+	if (elTxtMiruTocPage) {
+		setItemEpisodeElement("episode-index", elTxtMiruTocPage, item)
+	}
+	if (elTxtMiruNextPage) {
+		setItemEpisodeElement("next-episode", elTxtMiruNextPage, item)
+	}
+	const func = {}
+	if (elTxtMiruPrevPage || elTxtMiruTocPage || elTxtMiruNextPage) {
+		func.setPrevEpisode = (el_a, _) => el_a.style.display = "none"
+		func.setNextEpisode = (el_a, _) => el_a.style.display = "none"
+		func.setEpisodeIndex = (el_a, _) => el_a.style.display = "none"
+	} else {
+		func.setPrevEpisode = (el_a, item) => setItemEpisodeElement("prev-episode", el_a, item)
+		func.setNextEpisode = (el_a, item) => setItemEpisodeElement("next-episode", el_a, item)
+		func.setEpisodeIndex = (el_a, item) => setItemEpisodeText("episode-index", el_a.href, "目次へ", item)
+	}
+	return func
+}
 const parseHtml = (url, index_url, html, class_name) => {
 	const item = {
 		className: class_name
@@ -67,116 +72,71 @@ const parseHtml = (url, index_url, html, class_name) => {
 	// ファイルサイズが大きいと処理が遅くなるので章ごとにページを分ける
 	html = doc.body.innerHTML
 	if (html.length > 50000) {
-		let target_no = 0
-		{
-			const m = url.match(/\?([0-9]+)/i)
-			if (m){
-				target_no = parseInt(m[1])
-			}
-		}
-		const main_e = doc.getElementsByClassName("main_text")[0]
-		const subtitle = {}
-		let n = 0
-		if (target_no === 0) {
-			// 目次ページの作成
-			const e_list = []
-			let page = 0
+		const m = url.match(/\?([0-9]+)/i)
+		const target_no = m ? parseInt(m[1]) : 0
+		const main_e = doc.querySelector(".main_text")
+		let page = 0
+		let type = 0
+		const e_list = []
+		if (target_no === 0) { // 目次ページの作成
+			const e_div = doc.createElement("div")
+			e_div.className = "index_box"
 			for (const e of main_e.childNodes) {
 				if (e.className && e.className.match(/jisage/)) {
-					const e_o_midashi = e.getElementsByClassName("o-midashi")
-					const e_naka_midashi = e.getElementsByClassName("naka-midashi")
-					if (e_o_midashi.length > 0) {
-						++n
+					const e_o_midashi = e.querySelector(".o-midashi")
+					const e_naka_midashi = e.querySelector(".naka-midashi")
+					if (e_o_midashi) {
 						++page
-						let sub_html = e_o_midashi[0].innerHTML
-						sub_html = sub_html.replace(/<a ([\s\S]*?)<\/a>/img, "<span$1</span>")
-						subtitle[n] = { type: 1, text: sub_html }
-					} else if (e_naka_midashi.length > 0) {
-						if (subtitle[n] && subtitle[n].type === 1) {
-
-						} else {
+						type = 1
+						const e_ctitle = doc.createElement("div")
+						e_ctitle.className = "chapter_title"
+						e_ctitle.innerHTML = e_o_midashi.textContent
+						e_div.appendChild(e_ctitle)
+					} else if (e_naka_midashi) {
+						if (type !== 1) {
 							++page
 						}
-						++n
-						let sub_html = e_naka_midashi[0].innerHTML
-						sub_html = sub_html.replace(/<a ([\s\S]*?)<\/a>/img, "<span$1</span>")
-						subtitle[n] = { type: 2, text: sub_html, page: page }
-						if (page === target_no + 1) {
-							item["next-episode"] = `${index_url}?${target_no + 1}`
-							item["next-episode-text"] = sub_html || "次へ"
+						type = 2
+						const sub_html = e_naka_midashi.textContent
+						if (page === 1) {
+							setItemEpisodeText("next-episode", `${index_url}?1`, sub_html || "次へ", item)
 						}
+						const e_dl_stitle = doc.createElement("dl")
+						e_dl_stitle.className = "novel_sublist2"
+						const e_dd_stitle = doc.createElement("dd")
+						e_dd_stitle.className = "subtitle"
+						const e_a_stitle = doc.createElement("a")
+						e_a_stitle.innerHTML = sub_html
+						e_a_stitle.href = `${index_url.replace(/.*\//, "./")}?${page}`
+						e_dd_stitle.appendChild(e_a_stitle)
+						e_dl_stitle.appendChild(e_dd_stitle)
+						e_div.appendChild(e_dl_stitle)
 					}
 				}
-				if (page === target_no) {
+				if (page === 0) {
 					e_list.push(e)
 				}
 			}
-			main_e.textContent = ""
-			for (const e of e_list) {
-				main_e.appendChild(e)
-			}
-			const arr = []
-			for (let i = 0; i <= n; ++i) {
-				const s = subtitle[i]
-				if (s) {
-					if (s.type === 1) {
-						const e_ctitle = document.createElement("div")
-						e_ctitle.className = "chapter_title"
-						e_ctitle.innerHTML = s.text
-						arr.push(e_ctitle)
-					} else {
-						const e_dl_stitle = document.createElement("dl")
-						e_dl_stitle.className = "novel_sublist2"
-						const e_dd_stitle = document.createElement("dd")
-						e_dd_stitle.className = "subtitle"
-						const e_a_stitle = document.createElement("a")
-						e_a_stitle.innerHTML = s.text
-						e_a_stitle.href = `${index_url.replace(/.*\//, "./")}?${s.page}`
-						e_dd_stitle.appendChild(e_a_stitle)
-						e_dl_stitle.appendChild(e_dd_stitle)
-						arr.push(e_dl_stitle)
-					}
-				}
-			}
-			const e_div = document.createElement("div")
-			e_div.className = "index_box"
-			for (const e of arr) {
-				e_div.appendChild(e)
-			}
-			main_e.appendChild(e_div)
+			e_list.push(e_div)
 		} else if (target_no > 0) {
-			const e_list = []
-			let page = 0
-			item["prev-episode"] = `${index_url}`
-			item["prev-episode-text"] = "目次へ"
+			setItemEpisodeText("prev-episode", index_url, "目次へ", item)
 			for (const e of main_e.childNodes) {
 				if (e.className && e.className.match(/jisage/)) {
-					const e_o_midashi = e.getElementsByClassName("o-midashi")
-					const e_naka_midashi = e.getElementsByClassName("naka-midashi")
-					if (e_o_midashi.length > 0) {
-						++n
+					const e_naka_midashi = e.querySelector(".naka-midashi")
+					if (e.querySelector(".o-midashi")) {
 						++page
-						const sub_html = e_o_midashi[0].innerHTML
-							.replace(/<a ([\s\S]*?)<\/a>/img, "<span$1</span>")
-						subtitle[n] = { type: 1, text: sub_html }
-					} else if (e_naka_midashi.length > 0) {
-						if (subtitle[n] && subtitle[n].type === 1) {
-
-						} else {
+						type = 1
+					} else if (e_naka_midashi) {
+						if (type !== 1) {
 							++page
 						}
-						++n
-						const sub_html = e_naka_midashi[0].innerHTML
-							.replace(/<a ([\s\S]*?)<\/a>/img, "<span$1</span>")
-						subtitle[n] = { type: 2, text: sub_html, page: page }
+						type = 2
 						if (page === target_no) {
-							item["title"] += " " + e_naka_midashi[0].textContent
+							item["title"] += " " + e_naka_midashi.textContent
 						} else if (page === target_no - 1) {
-							item["prev-episode"] = `${index_url}?${target_no - 1}`
-							item["prev-episode-text"] = sub_html || "前へ"
+							setItemEpisodeText("prev-episode", `${index_url}?${target_no - 1}`, e_naka_midashi.textContent || "前へ", item)
 						} else if (page === target_no + 1) {
-							item["next-episode"] = `${index_url}?${target_no + 1}`
-							item["next-episode-text"] = sub_html || "次へ"
+							setItemEpisodeText("next-episode", `${index_url}?${target_no + 1}`, e_naka_midashi.textContent || "次へ", item)
 							break
 						}
 					}
@@ -192,23 +152,29 @@ const parseHtml = (url, index_url, html, class_name) => {
 					}
 				}
 			}
-			main_e.textContent = ""
-			for (const e of e_list) {
-				main_e.appendChild(e)
-			}
+		}
+		main_e.textContent = ""
+		for (const e of e_list) {
+			main_e.appendChild(e)
 		}
 	}
 	TxtMiruLib.KumihanMod(url, doc)
 	item["html"] = doc.body.innerHTML
 	return [item, doc]
 }
-
+const getHtmlDocument = async url => {
+	const html = await fetch(url)
+		.then(response => response.text())
+		.then(text => text)
+	const parser = new DOMParser()
+	return parser.parseFromString(html, "text/html")
+}
 class TxtMiruSitePlugin {
 	Match = url => false
 	GetDocument = (txtMiru, url) => null
 	GetInfo = (txtMiru, url, callback = null) => false // お気に入りで使用
 	GetPageNo = (txtMiru, url) => { } // お気に入りで使用
-	Name = () => ""
+	Name = _ => ""
 }
 
 export class TxtMiruSiteManager {
@@ -392,7 +358,7 @@ class TxtMiruCacheSite extends TxtMiruSitePlugin {
 				// ローカルファイルの読み込み
 				await new Promise((resolve, reject) => {
 					const reader = new FileReader()
-					reader.onload = async () => {
+					reader.onload = async _ => {
 						if (cache.zip) {
 							if (cache.url.match(/\.epub$/)) {
 								//epubIndex(txtMiru, index_url, cache)
@@ -444,24 +410,23 @@ class TxtMiruCacheSite extends TxtMiruSitePlugin {
 			if (item["title"].length === 0){
 				item["title"] = cache.name
 			}
-			item["episode-index-text"] = item["top-title"]
-			item["episode-index"] = url.replace(/\?[0-9]+$/, "")
+			setItemEpisodeText("episode-index", url.replace(/\?[0-9]+$/, ""), item["top-title"], item)
 			return Promise.resolve(item)
 		}
 		return Promise.resolve({ html: "Not found" })
 	}
 	GetInfo = (txtMiru, url, callback = null) => false
 	GetPageNo = (txtMiru, url) => { }
-	Name = () => "TxtMiru"
+	Name = _ => "TxtMiru"
 }
 TxtMiruSiteManager.AddSite(new TxtMiruCacheSite())
 
 class TxtMiruWebCacheSite extends TxtMiruSitePlugin {
 	Match = url => url.match(/https:\/\/txtmiru\.web\.cache/)
 	makeItem = (url, text) => {
-		let doc = TxtMiruLib.HTML2Document(text)
+		const doc = TxtMiruLib.HTML2Document(text)
+		const item = { className: "Narou TxtMiruCacheWeb", "url": url, "title": doc.title }
 		TxtMiruLib.KumihanMod(url, doc)
-		let item = { className: "Narou TxtMiruCacheWeb", "url": url, "title": doc.title }
 		//
 		const forcePager = checkForcePager(doc, item)
 		for (const el_a of doc.getElementsByTagName("A")) {
@@ -470,15 +435,13 @@ class TxtMiruWebCacheSite extends TxtMiruSitePlugin {
 				el_a.href = TxtMiruLib.ConvertAbsoluteURL(url, href)
 			}
 			const classlist = el_a.classList
-			if (el_a.innerText === "<< 前へ"
-				|| classlist.contains("novelview_pager-before")
+			if (el_a.textContent === "前へ"
 				|| classlist.contains("c-pager__item--before")) {
 				forcePager.setPrevEpisode(el_a, item)
-			} else if (el_a.innerText == "次へ >>"
-				|| classlist.contains("novelview_pager")
+			} else if (el_a.textContent === "次へ"
 				|| classlist.contains("c-pager__item--next")) {
 				forcePager.setNextEpisode(el_a, item)
-			} else if (el_a.innerText == "目次" && el_a.id !== "TxtMiruTocPage") {
+			} else if (el_a.textContent === "目次" && el_a.id !== "TxtMiruTocPage") {
 				forcePager.setEpisodeIndex(el_a, item)
 			}
 		}
@@ -513,64 +476,16 @@ class TxtMiruWebCacheSite extends TxtMiruSitePlugin {
 	}
 	GetInfo = (txtMiru, url, callback = null) => false
 	GetPageNo = (txtMiru, url) => { }
-	Name = () => "TxtMiruWeb"
+	Name = _ => "TxtMiruWeb"
 }
 TxtMiruSiteManager.AddSite(new TxtMiruWebCacheSite())
-
-const checkForcePager = (doc, item) => {
-	const elTxtMiruCurPage = doc.getElementById("TxtMiruCurPage")
-	const elTxtMiruPrevPage = doc.getElementById("TxtMiruPrevPage")
-	const elTxtMiruTocPage = doc.getElementById("TxtMiruTocPage")
-	const elTxtMiruNextPage = doc.getElementById("TxtMiruNextPage")
-	if (elTxtMiruCurPage) {
-		item["page_no"] = elTxtMiruCurPage.getAttribute("page_no")
-	}
-	if (elTxtMiruPrevPage) {
-		item["prev-episode"] = elTxtMiruPrevPage.href
-		item["prev-episode-text"] = elTxtMiruPrevPage.textContent
-	}
-	if (elTxtMiruTocPage) {
-		item["episode-index"] = elTxtMiruTocPage.href
-		item["episode-index-text"] = elTxtMiruTocPage.textContent
-	}
-	if (elTxtMiruNextPage) {
-		item["next-episode"] = elTxtMiruNextPage.href
-		item["next-episode-text"] = elTxtMiruNextPage.textContent
-	}
-	const func = {}
-	if (elTxtMiruPrevPage || elTxtMiruTocPage || elTxtMiruNextPage) {
-		func.setPrevEpisode = (el_a, item) => {
-			el_a.style.display = "none"
-		}
-		func.setNextEpisode = (el_a, item) => {
-			el_a.style.display = "none"
-		}
-		func.setEpisodeIndex = (el_a, item) => {
-			el_a.style.display = "none"
-		}
-	} else {
-		func.setPrevEpisode = (el_a, item) => {
-			item["prev-episode"] = el_a.href
-			item["prev-episode-text"] = el_a.textContent
-		}
-		func.setNextEpisode = (el_a, item) => {
-			item["next-episode"] = el_a.href
-			item["next-episode-text"] = el_a.textContent
-		}
-		func.setEpisodeIndex = (el_a, item) => {
-			item["episode-index"] = el_a.href
-			item["episode-index-text"] = "目次へ"
-		}
-	}
-	return func
-}
 
 class Narou extends TxtMiruSitePlugin {
 	Match = url => url.match(/https:\/\/.*\.syosetu\.com/)
 	makeItem = (url, text) => {
 		const doc = TxtMiruLib.HTML2Document(text)
-		TxtMiruLib.KumihanMod(url, doc)
 		const item = { className: "Narou", "url": url, "title": doc.title }
+		TxtMiruLib.KumihanMod(url, doc)
 		//
 		const forcePager = checkForcePager(doc, item)
 		for (const el_a of doc.getElementsByTagName("A")) {
@@ -579,17 +494,23 @@ class Narou extends TxtMiruSitePlugin {
 				el_a.href = TxtMiruLib.ConvertAbsoluteURL(url, href) //`https://ncode.syosetu.com${href}`
 			}
 			const classlist = el_a.classList
-			if (el_a.innerText === "<< 前へ"
-				|| classlist.contains("novelview_pager-before")
+			if (el_a.textContent === "前へ"
 				|| classlist.contains("c-pager__item--before")) {
 				forcePager.setPrevEpisode(el_a, item)
-			} else if (el_a.innerText == "次へ >>"
-				|| classlist.contains("novelview_pager")
+			} else if (el_a.textContent === "次へ"
 				|| classlist.contains("c-pager__item--next")) {
 				forcePager.setNextEpisode(el_a, item)
-			} else if (el_a.innerText == "目次" && el_a.id !== "TxtMiruTocPage") {
+			} else if (el_a.textContent === "目次" && el_a.id !== "TxtMiruTocPage") {
 				forcePager.setEpisodeIndex(el_a, item)
 			}
+		}
+		const el_chapter = doc.querySelector(".p-novel__subtitle-chapter")
+		if (el_chapter){
+			item["title"] += ` ${el_chapter.textContent}`
+		}
+		const el_episode = doc.querySelector(".p-novel__subtitle-episode")
+		if (el_episode){
+			item["title"] += ` ${el_episode.textContent}`
 		}
 		for (const el of doc.getElementsByClassName("long_update")) {
 			let el_rev = null
@@ -606,13 +527,11 @@ class Narou extends TxtMiruSitePlugin {
 		return item
 	}
 	GetDocument = async (txtMiru, url) => {
-		const cookie = (txtMiru.setting["over18"] == "yes") ? "over18=yes" : ""
 		const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
 			url: url,
 			charset: "UTF-8",
-			cookie: cookie
+			cookie: (txtMiru.setting["over18"] === "yes") ? "over18=yes" : ""
 		})}`
-		const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time))
 		let item = null
 		const fetchOpt = getFetchOption(txtMiru)
 		for(let i=1; i<=5; ++i){
@@ -649,16 +568,16 @@ class Narou extends TxtMiruSitePlugin {
 		}
 		return item
 	}
+	#getNcode = url => {
+		const m = url.match(/https:\/\/.*\.syosetu\.com\/n([A-Za-z0-9]+)/)
+		return (m ? `N${m[1]}` : url).toUpperCase()
+	}
 	getUpdateInfo = async url => {
 		if (!url) {
 			return []
 		}
-		let ncode = url
-		const m = url.match(/https:\/\/.*\.syosetu\.com\/n([A-Za-z0-9]+)/)
-		if (m) {
-			ncode = `N${m[1]}`.toUpperCase()
-		}
-		if (ncode.length == 0) {
+		const ncode = this.#getNcode(url)
+		if (ncode.length === 0) {
 			return []
 		}
 		url = `https://api.syosetu.com/novelapi/api/?out=jsonp&ncode=${ncode}&callback=callback`
@@ -670,35 +589,7 @@ class Narou extends TxtMiruSitePlugin {
 			let results = []
 			let requests = []
 			let item_list = []
-			for (const u of url) {
-				if (this.Match(u)) {
-					let ncode = u
-					const m = u.match(/https:\/\/.*\.syosetu\.com\/n([A-Za-z0-9]+)/)
-					if (m) {
-						ncode = `n${m[1]}`
-					}
-					item_list.push(u)
-					requests.push(ncode.toUpperCase())
-					if (requests.length > 10) {
-						if (callback) {
-							callback(item_list)
-						}
-						for (const item of await this.getUpdateInfo(requests.join("-"))) {
-							if (item.ncode) {
-								results.push({
-									url: item.ncode.toUpperCase(),
-									max_page: item.novel_type == 2/*短編*/ ? -1 : item.general_all_no,
-									name: item.title,
-									author: item.writer
-								})
-							}
-						}
-						requests = []
-						item_list = []
-					}
-				}
-			}
-			if (requests.length > 0) {
+			const addItem = async _ => {
 				if (callback) {
 					callback(item_list)
 				}
@@ -713,16 +604,25 @@ class Narou extends TxtMiruSitePlugin {
 					}
 				}
 			}
+			for (const u of url) {
+				if (this.Match(u)) {
+					item_list.push(u)
+					requests.push(this.#getNcode(u))
+					if (requests.length > 10) {
+						await addItem()
+						requests = []
+						item_list = []
+					}
+				}
+			}
+			if (requests.length > 0) {
+				await addItem()
+			}
 			const out_results = []
 			for (const u of url) {
-				let ncode = u
-				const m = u.match(/https:\/\/.*\.syosetu\.com\/n([A-Za-z0-9]+)/)
-				if (m) {
-					ncode = `n${m[1]}`.toUpperCase()
-				}
-				ncode = ncode.toUpperCase()
+				const ncode = this.#getNcode(u)
 				for (const ret of results) {
-					if (ret.url == ncode) {
+					if (ret.url === ncode) {
 						out_results.push({
 							url: appendSlash(u),
 							max_page: ret.max_page,
@@ -735,17 +635,12 @@ class Narou extends TxtMiruSitePlugin {
 			}
 			return out_results
 		} else if (this.Match(url)) {
-			let ncode = url
-			const m = url.match(/https:\/\/.*\.syosetu\.com\/n([A-Za-z0-9]+)/)
-			if (m) {
-				ncode = `n${m[1]}`.toUpperCase()
-			}
-			ncode = ncode.toUpperCase()
 			if (callback) {
 				callback([url])
 			}
+			const ncode = this.#getNcode(url)
 			for (const item of await this.getUpdateInfo(url)) {
-				if (item.ncode && ncode == item.ncode.toUpperCase()) {
+				if (item.ncode && ncode === item.ncode.toUpperCase()) {
 					return {
 						url: appendSlash(url),
 						max_page: item.general_all_no,
@@ -762,9 +657,8 @@ class Narou extends TxtMiruSitePlugin {
 			url = appendSlash(url)
 			const m = url.match(/(https:\/\/.*\.syosetu\.com\/n[A-Za-z0-9]+)\/([0-9]+)/)
 			if (m) {
-				let page_no = m[2] | 0
-				let index_url = m[1]
-				index_url = appendSlash(index_url)
+				const page_no = m[2] | 0
+				const index_url = appendSlash(m[1])
 				return { url: url, page_no: page_no, index_url: index_url }
 			} else if (url.match(/https:\/\/.*\.syosetu\.com\/n[A-Za-z0-9]+\/$/)) {
 				return { url: url, page_no: 0, index_url: url }
@@ -772,7 +666,7 @@ class Narou extends TxtMiruSitePlugin {
 		}
 		return null
 	}
-	Name = () => "小説家になろう"
+	Name = _ => "小説家になろう"
 }
 TxtMiruSiteManager.AddSite(new Narou())
 
@@ -796,7 +690,6 @@ class Kakuyomu extends TxtMiruSitePlugin {
 			.then(response => response.text())
 			.then(text => {
 				const doc = TxtMiruLib.HTML2Document(text)
-				TxtMiruLib.KumihanMod(url, doc)
 				const item = {
 					className: "Kakuyomu",
 					"title": doc.title,
@@ -805,26 +698,50 @@ class Kakuyomu extends TxtMiruSitePlugin {
 					"episode-index-text": "カクヨム",
 					"episode-index": "https://kakuyomu.jp/"
 				}
+				let toc = {}
+				if (text.match(/__NEXT_DATA__/)){
+					const parser = new DOMParser()
+					const tocDodc = parser.parseFromString(text, "text/html")
+					toc = this.GetToc(url, tocDodc)
+				}
+				if (toc.subtitles && toc.subtitles.length > 0 && url.match(/works\/[0-9]+$/)) {
+					// Indexページが最初の数件しか目次を表示しないのでページ再生成
+					const arrHtml = []
+					arrHtml.push(`<h1 class='title'>${TxtMiruLib.EscapeHtml(toc.title)}</h1>`)
+					arrHtml.push(`<h2 class='author'>${TxtMiruLib.EscapeHtml(toc.author)}</h2>`)
+					arrHtml.push(`<div><p>${TxtMiruLib.EscapeHtml(toc.story).replace(/\n/g, "<br>")}</p></div>`)
+					arrHtml.push(`<ul class="subtitles">`)
+  					let preChpter = ""
+					for(const item of toc.subtitles)
+					{
+						if (item.chapter && preChpter !== item.chapter)
+						{
+							arrHtml.push(`<li class="chapter">${TxtMiruLib.EscapeHtml(item.chapter)}</li>`)
+						}
+						preChpter = item.chapter
+						arrHtml.push(`<li><a href="${item.href}">${TxtMiruLib.EscapeHtml(item.subtitle||"")}</a><span class='long_update'>${TxtMiruLib.EscapeHtml(item.subupdate||item.subdate||"")}</span></li>`)
+					}
+					arrHtml.push(`</ul>`)
+					arrHtml.push(`<div>`)
+					arrHtml.push(`<a class='txtmiru_pager' id='TxtMiruNextPage' href='${toc.subtitles[0].href}'>次へ （${TxtMiruLib.EscapeHtml(toc.subtitles[0].subtitle.trim())}）</a>`)
+					arrHtml.push("</div>")
+					doc.body.innerHTML = arrHtml.join("")
+				}
+				TxtMiruLib.KumihanMod(url, doc)
 				const remove_nodes = []
 				for(const el of doc.querySelectorAll("h2,h3")){
 					if (el.textContent.match(/^(新着おすすめレビュー|おすすめレビュー|関連小説)$/)){
 						remove_nodes.push(el.parentNode)
 					}
 				}
-				for (const e of remove_nodes) {
-					if (e) {
-						e.parentNode.removeChild(e)
-					}
-				}
+				removeNodes(remove_nodes)
 				const forcePager = checkForcePager(doc, item)
-				for (const el of doc.getElementsByClassName("widget-toc-episode-datePublished")) {
-					for (const el_span of el.getElementsByTagName("SPAN")) {
-						const m = el_span.innerText.match(/([0-9]+)年([0-9]+)月([0-9]+)日/)
-						if (m && m.length > 0) {
-							el_span.innerText = `${m[1]}年${("0" + m[2]).slice(-2)}月${("0" + m[3]).slice(-2)}日`.replace(/[0-9]/g, s => {
-								return String.fromCharCode(s.charCodeAt(0) + 0xFEE0)
-							})
-						}
+				for (const el_span of doc.querySelectorAll(".widget-toc-episode-datePublished > span")) {
+					const m = el_span.innerText.match(/([0-9]+)年([0-9]+)月([0-9]+)日/)
+					if (m && m.length > 0) {
+						el_span.innerText = `${m[1]}年${("0" + m[2]).slice(-2)}月${("0" + m[3]).slice(-2)}日`.replace(/[0-9]/g, s => {
+							return String.fromCharCode(s.charCodeAt(0) + 0xFEE0)
+						})
 					}
 				}
 				let title = ""
@@ -833,13 +750,13 @@ class Kakuyomu extends TxtMiruSitePlugin {
 					if (!href.match(/^http/)) {
 						el_a.href = TxtMiruLib.ConvertAbsoluteURL(url, href) //`https://kakuyomu.jp${href}`
 					}
-					if (el_a.getAttribute("data-link-click-action-name") == "WorksEpisodesEpisodeHeaderPreviousEpisode") {
+					if (el_a.getAttribute("data-link-click-action-name") === "WorksEpisodesEpisodeHeaderPreviousEpisode") {
 						forcePager.setPrevEpisode(el_a, item)
 						el_a.style.display = "none"
-					} else if (el_a.getAttribute("data-link-click-action-name") == "WorksEpisodesEpisodeFooterNextEpisode") {
+					} else if (el_a.getAttribute("data-link-click-action-name") === "WorksEpisodesEpisodeFooterNextEpisode") {
 						forcePager.setNextEpisode(el_a, item)
 						el_a.style.display = "none"
-					} else if (el_a.getAttribute("itemprop") == "item") {
+					} else if (el_a.getAttribute("itemprop") === "item") {
 						forcePager.setEpisodeIndex(el_a, item)
 						title = `<a class="kakuyomu_title" href="${el_a.href}">${el_a.getAttribute("title")}</a>`
 						el_a.style.display = "none"
@@ -848,7 +765,62 @@ class Kakuyomu extends TxtMiruSitePlugin {
 				item["html"] = title + doc.body.innerHTML
 				return item
 			})
-			.catch(err => checkFetchAbortError(err, url))
+			.catch(err => {
+				console.log(err)
+				return checkFetchAbortError(err, url)
+			})
+	}
+	GetToc = (index_url, doc) => {
+		const toc = {
+			title: "",
+			author: "",
+			story: "",
+			subtitles: []
+		}
+		try {
+			const script_data = doc.getElementById("__NEXT_DATA__")
+			if (!script_data) {
+				return toc
+			}
+			const m0 = index_url.match(/works\/(.*)/)
+			const base_name = (m0 && m0.length > 0) ? m0[1] : ""
+			const json = JSON.parse(script_data.innerHTML)
+			const apollo_state = json["props"]["pageProps"]["__APOLLO_STATE__"]
+			const root_query = apollo_state["ROOT_QUERY"]
+			const top_work_id = root_query["work({\"id\":\"" + base_name + "\"})"]["__ref"]
+			const top_work = apollo_state[top_work_id]
+			toc.title = top_work["title"]
+			toc.author = apollo_state[top_work["author"]["__ref"]]["activityName"]
+			toc.story = `${top_work["catchphrase"]}\n${top_work["introduction"]}`
+			let chapter = ""
+			let index = 0
+			for(const tableOfContent of top_work["tableOfContents"]){
+				const subTableOfContents = apollo_state[tableOfContent["__ref"]]
+				if(subTableOfContents["chapter"]) {
+					chapter = apollo_state[subTableOfContents["chapter"]["__ref"]]["title"]
+				}
+				const episodes = subTableOfContents["episodeUnions"]
+				if (episodes) {
+					for(const item of episodes){
+						++index;
+						const episode = apollo_state[item["__ref"]]
+						toc.subtitles.push(
+							{
+								subtitle: episode["title"],
+								href: `/works/${base_name}/episodes/${episode["id"]}`,
+								index: index,
+								subdate: episode["publishedAt"],
+								subupdate: "",
+								chapter: chapter,
+							}
+						)
+					}
+				}
+			}
+		} catch(e) {
+			console.log(e)
+		}
+		return toc
 	}
 	GetInfo = async (txtMiru, url, callback = null) => {
 		if (Array.isArray(url)) {
@@ -856,7 +828,7 @@ class Kakuyomu extends TxtMiruSitePlugin {
 			for (const u of url) {
 				if (this.Match(u)) {
 					const item = await this.GetInfo(txtMiru, u, callback)
-					if (item != null) {
+					if (item !== null) {
 						results.push(item)
 					}
 				}
@@ -878,11 +850,7 @@ class Kakuyomu extends TxtMiruSitePlugin {
 				url: `${index_url}`,
 				charset: "UTF-8"
 			})}`
-			const html = await fetch(req_url)
-				.then(response => response.text())
-				.then(text => text)
-			const parser = new DOMParser()
-			const doc = parser.parseFromString(html, "text/html")
+			const doc = await getHtmlDocument(req_url)
 			let max_page = 1
 			let title = ""
 			let author = ""
@@ -893,34 +861,10 @@ class Kakuyomu extends TxtMiruSitePlugin {
 			} catch (e) {
 
 			}
-			try {
-				const script_data = doc.getElementById("__NEXT_DATA__");
-				if (script_data) {
-					let base_name = ""
-					const m0 = index_url.match(/works\/(.*)/)
-					if(m0 && m0.length > 0){
-						base_name = m0[1]
-					}
-					const json = JSON.parse(script_data.innerHTML)
-					const apollo_state = json["props"]["pageProps"]["__APOLLO_STATE__"]
-					const root_query = apollo_state["ROOT_QUERY"]
-					const top_work_id = root_query["work({\"id\":\"" + base_name + "\"})"]["__ref"]
-					const top_work = apollo_state[top_work_id];
-					author = apollo_state[top_work["author"]["__ref"]]["activityName"]
-					title = top_work["title"];
-					const tableOfContents = top_work["tableOfContents"]
-					max_page = 0
-					for (const i = 0; i < tableOfContents.length; ++i) {
-						const subTableOfContents = apollo_state[tableOfContents[i]["__ref"]]
-						const episodes = subTableOfContents["episodeUnions"]
-						if (episodes) {
-							max_page += episodes.length
-						}
-					}
-				}
-			} catch (e) {
-
-			}
+			const toc = this.GetToc(index_url, doc)
+			author = toc.author || author
+			title = toc.title || title
+			max_page = toc.subtitles.length || max_page
 			return {
 				url: removeSlash(url),
 				max_page: max_page,
@@ -941,11 +885,7 @@ class Kakuyomu extends TxtMiruSitePlugin {
 					url: `${url}episode_sidebar`,
 					charset: "UTF-8"
 				})}`
-				const html = await fetch(req_url)
-					.then(response => response.text())
-					.then(text => text)
-				const parser = new DOMParser()
-				const doc = parser.parseFromString(html, "text/html")
+				const doc = await getHtmlDocument(req_url)
 				let page_no = 0
 				for (let anchor of doc.getElementsByClassName("widget-toc-episode-episodeTitle")) {
 					++page_no
@@ -960,7 +900,7 @@ class Kakuyomu extends TxtMiruSitePlugin {
 		}
 		return null
 	}
-	Name = () => "カクヨム"
+	Name = _ => "カクヨム"
 }
 TxtMiruSiteManager.AddSite(new Kakuyomu())
 
@@ -984,7 +924,7 @@ class Aozora extends TxtMiruSitePlugin {
 	Match = url => url.match(/https*:\/\/www\.aozora\.gr\.jp/)
 	ParseHtml = (url, index_url, html) => {
 		html = html
-			.replace(/［＃(.*?)］/g, (all, m) => {
+			.replace(/［＃(.*?)］/g, (_, m) => {
 				let r
 				if (m.match(/底本/)) {
 					return `<sup title='${m}'>※</sup>`
@@ -1009,10 +949,6 @@ class Aozora extends TxtMiruSitePlugin {
 				setTimeout(() => resolve(this.ParseHtml(url, index_url, html)))
 			})
 		}
-		let charset = "UTF-8"
-		if (url.match(/files/)) {
-			charset = "Shift_JIS"
-		}
 		const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
 			url: url,
 			charset: "Auto"
@@ -1032,7 +968,7 @@ class Aozora extends TxtMiruSitePlugin {
 			for (const u of url) {
 				if (this.Match(u)) {
 					const item = await this.GetInfo(txtMiru, u, callback)
-					if (item != null) {
+					if (item !== null) {
 						results.push(item)
 					}
 				}
@@ -1053,53 +989,30 @@ class Aozora extends TxtMiruSitePlugin {
 				url: `${target_url}`,
 				charset: "Auto"
 			})}`
-			const html = await fetch(req_url)
-				.then(response => response.text())
-				.then(text => text)
-			const parser = new DOMParser()
-			const doc = parser.parseFromString(html, "text/html")
-
+			const doc = await getHtmlDocument(req_url)
+			const getText = cond => {
+				for(const id of cond){
+					const el = doc.querySelector(id)
+					if (el){
+						return el.innerText
+					}
+				}
+				return ""
+			}
 			const item = {
 				url: url,
 				max_page: 1,
-				name: "",
-				author: ""
-			}
-			const e_title = doc.getElementsByClassName("title")
-			if (e_title.length > 0) {
-				item.name = e_title[0].innerText
-			} else {
-				const h1 = doc.getElementsByTagName("h1")
-				if (h1.length > 0) {
-					item.name = h1[0].innerText
-				}
-			}
-			const e_author = doc.getElementsByClassName("author")
-			if (e_author.length > 0) {
-				item.author = e_author[0].innerText
-			} else {
-				const h2 = doc.getElementsByTagName("h2")
-				if (h2.length > 0) {
-					item.author = h2[0].innerText
-				}
+				name: getText([".title, h1"]),
+				author: getText([".author, h2"])
 			}
 			for (const e of doc.getElementsByClassName("header")) {
-				if (e.innerText == "作品名：") {
+				if (e.innerText === "作品名：") {
 					item.name = e.nextElementSibling.innerText
-				} else if (e.innerText == "著者名：") {
+				} else if (e.innerText === "著者名：") {
 					item.author = e.nextElementSibling.innerText
 				}
 			}
-			let n = 0
-			for (const main_e of doc.getElementsByClassName("main_text")) {
-				for (const e of main_e.childNodes) {
-					if ((e.className && e.className.match(/jisage/))
-						&& (e.innerHTML && e.innerHTML.match(/naka\-midashi/))) {
-						++n
-					}
-				}
-				item.max_page = n
-			}
+			item.max_page = doc.querySelectorAll('[class^="jisage"] has(.naka-midashi)').length
 			return item
 		}
 		return null
@@ -1109,13 +1022,12 @@ class Aozora extends TxtMiruSitePlugin {
 			let r
 			if (r = url.match(/^(.*\.html)\?([0-9]+)$/)) {
 				return { url: url, page_no: parseInt(r[2]), index_url: r[1] }
-			} else {
-				return { url: url, page_no: 1, index_url: url }
-			}
+			} 
+			return { url: url, page_no: 1, index_url: url }
 		}
 		return null
 	}
-	Name = () => "青空文庫"
+	Name = _ => "青空文庫"
 }
 TxtMiruSiteManager.AddSite(new Aozora())
 
@@ -1123,21 +1035,7 @@ class Alphapolis extends TxtMiruSitePlugin {
 	Match = url => url.match(/www\.alphapolis\.co\.jp\//)
 	makeItem = (url, text) => {
 		const doc = TxtMiruLib.HTML2Document(text)
-		TxtMiruLib.KumihanMod(url, doc)
-		let remove_nodes = []
-		for (const id of ["gnbid", "breadcrumbs", "navbar", "header", "footer"]) {
-			remove_nodes.push(doc.getElementById(id))
-		}
-		for (const className of ["novel-freespace", "novel-action", "bookmark", "ScrollUpDown", "ranking-banner", "change-font-size", "alphapolis_title"]) {
-			for (const e of doc.getElementsByClassName(className)) {
-				remove_nodes.push(e)
-			}
-		}
-		for (const e of remove_nodes) {
-			if (e) {
-				e.parentNode.removeChild(e)
-			}
-		}
+		removeNodes(doc.querySelectorAll("#gnbid, #breadcrumbs, #navbar, #header, #footer, .novel-freespace, .novel-action, .bookmark, .ScrollUpDown, .ranking-banner, .change-font-size, .alphapolis_title"))
 		const item = {
 			className: "Alphapolis",
 			"title": doc.title,
@@ -1146,18 +1044,17 @@ class Alphapolis extends TxtMiruSitePlugin {
 			"episode-index-text": "アルファポリス",
 			"episode-index": "https://www.alphapolis.co.jp"
 		}
+		TxtMiruLib.KumihanMod(url, doc)
 		const forcePager = checkForcePager(doc, item)
-		for (const el of doc.getElementsByClassName("episode")) {
-			for (const el_span of el.getElementsByTagName("SPAN")) {
-				let r
-				if (r = el_span.innerText.match(/([0-9]+)年([0-9]+)月([0-9]+)日/)) {
-					el_span.innerText = `${r[1]}年${("0" + r[2]).slice(-2)}月${("0" + r[3]).slice(-2)}日`.replace(/[0-9]/g, s => {
-						return String.fromCharCode(s.charCodeAt(0) + 0xFEE0)
-					})
-				}
-				if (r = el_span.innerText.match(/([0-9]+)\.([0-9]+)\.([0-9]+) ([0-9]+):([0-9]+)/)) {
-					el_span.innerText = `${r[1]}/${("0" + r[2]).slice(-2)}/${("0" + r[3]).slice(-2)} ${("0" + r[4]).slice(-2)}:${("0" + r[5]).slice(-2)}`
-				}
+		for (const el_span of doc.querySelectorAll(".episode > span")) {
+			let r
+			if (r = el_span.innerText.match(/([0-9]+)年([0-9]+)月([0-9]+)日/)) {
+				el_span.innerText = `${r[1]}年${("0" + r[2]).slice(-2)}月${("0" + r[3]).slice(-2)}日`.replace(/[0-9]/g, s => {
+					return String.fromCharCode(s.charCodeAt(0) + 0xFEE0)
+				})
+			}
+			if (r = el_span.innerText.match(/([0-9]+)\.([0-9]+)\.([0-9]+) ([0-9]+):([0-9]+)/)) {
+				el_span.innerText = `${r[1]}/${("0" + r[2]).slice(-2)}/${("0" + r[3]).slice(-2)} ${("0" + r[4]).slice(-2)}:${("0" + r[5]).slice(-2)}`
 			}
 		}
 		for (const el_a of doc.getElementsByTagName("A")) {
@@ -1165,13 +1062,13 @@ class Alphapolis extends TxtMiruSitePlugin {
 			if (!href.match(/^http/)) {
 				el_a.href = TxtMiruLib.ConvertAbsoluteURL(url, href)
 			}
-			if (el_a.className == "label-circle prev") {
+			if (el_a.className === "label-circle prev") {
 				forcePager.setPrevEpisode(el_a, item)
 				el_a.style.display = "none"
-			} else if (el_a.className == "label-circle next") {
+			} else if (el_a.className === "label-circle next") {
 				forcePager.setNextEpisode(el_a, item)
 				el_a.style.display = "none"
-			} else if (el_a.className == "label-circle cover") {
+			} else if (el_a.className === "label-circle cover") {
 				forcePager.setEpisodeIndex(el_a, item)
 				el_a.style.display = "none"
 			}
@@ -1185,7 +1082,6 @@ class Alphapolis extends TxtMiruSitePlugin {
 			charset: "UTF-8",
 			cookie: "request"
 		})}`
-		const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time))
 		let item = null
 		const fetchOpt = getFetchOption(txtMiru)
 		for(let i=1; i<=5; ++i){
@@ -1228,7 +1124,7 @@ class Alphapolis extends TxtMiruSitePlugin {
 			for (const u of url) {
 				if (this.Match(u)) {
 					const item = await this.GetInfo(txtMiru, u, callback)
-					if (item != null) {
+					if (item !== null) {
 						results.push(item)
 					}
 				}
@@ -1251,11 +1147,7 @@ class Alphapolis extends TxtMiruSitePlugin {
 				charset: "UTF-8",
 				cookie: "request"
 			})}`
-			const html = await fetch(req_url)
-				.then(response => response.text())
-				.then(text => text)
-			const parser = new DOMParser()
-			const doc = parser.parseFromString(html, "text/html")
+			const doc = await getHtmlDocument(req_url)
 			let name = doc.title
 			let author = ""
 			let max_page = 0
@@ -1270,11 +1162,7 @@ class Alphapolis extends TxtMiruSitePlugin {
 							remove_nodes.push(e)
 						}
 					}
-					for (const e of remove_nodes) {
-						if (e) {
-							e.parentNode.removeChild(e)
-						}
-					}
+					removeNodes(remove_nodes)
 					author = e_author.innerText.replace(/[\n\t]/g, "")
 				}
 			}
@@ -1302,11 +1190,7 @@ class Alphapolis extends TxtMiruSitePlugin {
 					charset: "UTF-8",
 					cookie: "request"
 				})}`
-				const html = await fetch(req_url)
-					.then(response => response.text())
-					.then(text => text)
-				const parser = new DOMParser()
-				const doc = parser.parseFromString(html, "text/html")
+				const doc = await getHtmlDocument(req_url)
 				let page_no = 0
 				for (const anchor of doc.getElementsByTagName("A")) {
 					if (anchor.getElementsByClassName("title").length > 0) {
@@ -1323,149 +1207,10 @@ class Alphapolis extends TxtMiruSitePlugin {
 		}
 		return null
 	}
-	Name = () => "アルファポリス"
+	Name = _ => "アルファポリス"
 }
 TxtMiruSiteManager.AddSite(new Alphapolis())
 
-//class Hameln extends TxtMiruSitePlugin {
-//	Match = url => url.match(/https:\/\/syosetu\.org\//)
-//	GetDocument = async (txtMiru, url) => {
-//		let req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
-//			url: url,
-//			charset: "UTF-8"
-//		})}`
-//		const fetchOpt = getFetchOption(txtMiru)
-//		return fetch(req_url, fetchOpt)
-//			.then(response => response.text())
-//			.then(text => {
-//				const doc = TxtMiruLib.HTML2Document(text)
-//				let dummy_url = url
-//				if (!dummy_url.match(/\.html$/)) {
-//					dummy_url = appendSlash(url) + "index.html"
-//				}
-//				TxtMiruLib.KumihanMod(dummy_url, doc)
-//				let remove_nodes = []
-//				for (const id of ["gnbid", "breadcrumbs", "navbar", "header", "footer"]) {
-//					remove_nodes.push(doc.getElementById(id))
-//				}
-//				for (const e of remove_nodes) {
-//					if (e) {
-//						e.parentNode.removeChild(e)
-//					}
-//				}
-//				let item = {
-//					className: "Hameln",
-//					"title": doc.title,
-//					"episode-index-text": "ハーメルン",
-//					"episode-index": "https://syosetu.org"
-//				}
-//				const forcePager = checkForcePager(doc, item)
-//				let title = ""
-//				for (const el_p of doc.getElementsByTagName("P")) {
-//					if (el_p.innerText.match(/\s\S*作：/)) {
-//						const el_a_arr = el_p.getElementsByTagName("A")
-//						if (el_a_arr.length == 2) {
-//							el_a_arr[0].className = "title"
-//							el_a_arr[1].className = "author"
-//							el_p.innerHTML = el_a_arr[0].outerHTML + el_a_arr[1].outerHTML
-//						}
-//						break
-//					}
-//				}
-//				for (const el_a of doc.getElementsByTagName("A")) {
-//					const href = el_a.getAttribute("href") || ""
-//					if (!href.match(/^http/)) {
-//						el_a.href = TxtMiruLib.ConvertAbsoluteURL(url, href)
-//					}
-//					if (el_a.innerText === "<< 前の話") {
-//						forcePager.setPrevEpisode(el_a, item)
-//					} else if (el_a.innerText === "次の話 >>") {
-//						forcePager.setNextEpisode(el_a, item)
-//					} else if (el_a.innerText === "目 次") {
-//						forcePager.setEpisodeIndex(el_a, item)
-//					}
-//				}
-//				item["html"] = title + doc.body.innerHTML
-//				return item
-//			})
-//			.catch(err => {
-//				return checkFetchAbortError(err, url)
-//			})
-//	}
-//	GetInfo = async (txtMiru, url, callback = null) => {
-//		if (Array.isArray(url)) {
-//			let results = []
-//			for (const u of url) {
-//				if (this.Match(u)) {
-//					const item = await this.GetInfo(txtMiru, u, callback)
-//					if (item != null) {
-//						results.push(item)
-//					}
-//				}
-//			}
-//			return results
-//		} else if (this.Match(url)) {
-//			if (callback) {
-//				callback([url])
-//			}
-//			let index_url = ""
-//			url = appendSlash(url)
-//			if (url.match(/(https:\/\/syosetu\.org\/novel\/[0-9]+)\//)) {
-//				index_url = RegExp.$1
-//			} else {
-//				return null
-//			}
-//			let req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
-//				url: `${index_url}`,
-//				charset: "UTF-8"
-//			})}`
-//			let html = await fetch(req_url)
-//				.then(response => response.text())
-//				.then(text => text)
-//			let parser = new DOMParser()
-//			let doc = parser.parseFromString(html, "text/html")
-//			let name = doc.title
-//			let author = ""
-//			let max_page = 0
-//			for (const el of doc.getElementsByTagName("SPAN")) {
-//				const itemprop = el.getAttribute("itemprop")
-//				if (itemprop == "name") {
-//					name = el.innerText
-//				} else if (itemprop == "author") {
-//					author = el.innerText
-//				} else {
-//					const id = el.id || ""
-//					if (id.match(/^[0-9]+$/)) {
-//						max_page = Math.max(max_page, parseInt(id))
-//					}
-//				}
-//			}
-//			return {
-//				url: removeSlash(url),
-//				max_page: max_page,
-//				name: name,
-//				author: author
-//			}
-//		}
-//		return null
-//	}
-//	GetPageNo = async (txtMiru, url) => {
-//		if (this.Match(url)) {
-//			url = appendSlash(url)
-//			if (url.match(/(https:\/\/syosetu\.org\/novel\/.*?)\/([0-9]+).html\/$/)) {
-//				let page_no = RegExp.$2
-//				let index_url = RegExp.$1
-//				return { url: removeSlash(url), page_no: page_no, index_url: index_url }
-//			} else if (url.match(/(https:\/\/syosetu\.org\/novel\/[0-9]+)\//)) {
-//				return { url: removeSlash(url), page_no: 0, index_url: removeSlash(url) }
-//			}
-//		}
-//		return null
-//	}
-//	Name = () => "ハーメルン"
-//}
-//TxtMiruSiteManager.AddSite(new Hameln())
-//
 class Akatsuki extends TxtMiruSitePlugin {
 	Match = url => url.match(/https:\/\/www\.akatsuki\-novels\.com\//)
 	GetDocument = async (txtMiru, url) => {
@@ -1478,57 +1223,29 @@ class Akatsuki extends TxtMiruSitePlugin {
 			.then(response => response.text())
 			.then(text => {
 				const doc = TxtMiruLib.HTML2Document(text)
-				let dummy_url = url
-				if (!dummy_url.match(/\.html$/)) {
-					dummy_url = appendSlash(url) + "index.html"
-				}
-				TxtMiruLib.KumihanMod(dummy_url, doc)
-				let remove_nodes = []
-				for (const id of ["trace", "header", "footer"]) {
-					remove_nodes.push(doc.getElementById(id))
-				}
-				for (const className of ["spacer"]) {
-					for (const e of doc.getElementsByClassName(className)) {
-						remove_nodes.push(e)
-					}
-				}
+				const dummy_url = dummy_url.match(/\.html$/) ? url : appendSlash(url) + "index.html"
+				let remove_nodes = doc.querySelectorAll("#trace,#header,#footer,.spacer")
 				for (const e of doc.getElementsByTagName("SPAN")) {
 					if (e.innerText.match(/しおりを利用するにはログインしてください。会員登録がまだの場合はこちらから。/)) {
 						remove_nodes.push(e)
 					}
 				}
-				for (const e of remove_nodes) {
-					if (e) {
-						e.parentNode.removeChild(e)
-					}
-				}
+				removeNodes(remove_nodes)
 				remove_nodes = []
-				let item = {
+				const item = {
 					className: "Akatsuki",
 					"title": doc.title,
 					"episode-index-text": "暁",
 					"episode-index": "https://www.akatsuki-novels.com/"
 				}
+				TxtMiruLib.KumihanMod(dummy_url, doc)
 				const forcePager = checkForcePager(doc, item)
-				for (const el of doc.getElementsByTagName("H3")) {
-					if (el.innerText.match(/作者：/)) {
-						const el_a_arr = el.getElementsByTagName("A")
-						if (el_a_arr.length == 1) {
-							el_a_arr[0].className = "author"
-							el.innerHTML = el_a_arr[0].outerHTML
-						}
+				for (const el_a of doc.getElementsByTagName("h3 > a:first-of-type, div > a:first-of-type")) {
+					if (el_a.parentNode.innerText.match(/作者：/)) {
+						el_a.className = "author"
+						el.innerHTML = el_a.outerHTML
 					}
 				}
-				for (const el of doc.getElementsByTagName("DIV")) {
-					if (el.innerText.match(/作者：/)) {
-						const el_a_arr = el.getElementsByTagName("A")
-						if (el_a_arr.length == 1) {
-							el_a_arr[0].className = "author"
-							el.innerHTML = el_a_arr[0].outerHTML
-						}
-					}
-				}
-				let title = ""
 				for (const el_a of doc.getElementsByTagName("A")) {
 					const href = el_a.getAttribute("href") || ""
 					if (!href.match(/^http/)) {
@@ -1545,12 +1262,8 @@ class Akatsuki extends TxtMiruSitePlugin {
 						forcePager.setEpisodeIndex(el_a, item)
 					}
 				}
-				for (const e of remove_nodes) {
-					if (e) {
-						e.parentNode.removeChild(e)
-					}
-				}
-				item["html"] = title + doc.body.innerHTML
+				removeNodes(remove_nodes)
+				item["html"] = doc.body.innerHTML
 				return item
 			})
 			.catch(err => checkFetchAbortError(err, url))
@@ -1585,28 +1298,16 @@ class Akatsuki extends TxtMiruSitePlugin {
 				url: `${index_url}`,
 				charset: "UTF-8"
 			})}`
-			const html = await fetch(req_url)
-				.then(response => response.text())
-				.then(text => text)
-			const parser = new DOMParser()
-			const doc = parser.parseFromString(html, "text/html")
-			let name = doc.title
-			let author = ""
-			let max_page = 0
-			for (const table of doc.getElementsByClassName("list")) {
-				for (const anchor of table.getElementsByTagName("A")) {
-					++max_page
-				}
-			}
+			const doc = await getHtmlDocument(req_url)
 			const el_title = doc.getElementById("LookNovel")
-			if (el_title) {
-				name = el_title.innerText
-			}
+			const name = el_title ? el_title.innerText :  doc.title
+			const max_page = doc.querySelectorAll(".list > a").length
+			let author = ""
 			for (const el of doc.getElementsByTagName("H3")) {
 				if (el.innerText.match(/作者：/)) {
-					const el_a_arr = el.getElementsByTagName("A")
-					if (el_a_arr.length === 1) {
-						author = el_a_arr[0].innerText
+					const el_a = el.querySelector("A")
+					if (el_a) {
+						author = el_a.innerText
 						break
 					}
 				}
@@ -1623,25 +1324,20 @@ class Akatsuki extends TxtMiruSitePlugin {
 	GetPageNo = async (txtMiru, url) => {
 		if (this.Match(url)) {
 			url = appendSlash(url)
-			if (url.match(/https:\/\/www\.akatsuki\-novels\.com\/stories\/view\/([0-9]+)\/novel_id~([0-9]+)\/$/)) {
-				const page_url = RegExp.$1
-				const index_url = `https://www.akatsuki-novels.com/stories/index/novel_id~${RegExp.$2}`
+			let r
+			if (r = url.match(/https:\/\/www\.akatsuki\-novels\.com\/stories\/view\/([0-9]+)\/novel_id~([0-9]+)\/$/)) {
+				const page_url = r[1]
+				const index_url = `https://www.akatsuki-novels.com/stories/index/novel_id~${r[2]}`
 				const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
 					url: `${index_url}`,
 					charset: "UTF-8"
 				})}`
-				const html = await fetch(req_url)
-					.then(response => response.text())
-					.then(text => text)
-				const parser = new DOMParser()
-				const doc = parser.parseFromString(html, "text/html")
+				const doc = await getHtmlDocument(req_url)
 				let page_no = 0
-				for (const table of doc.getElementsByClassName("list")) {
-					for (const anchor of table.getElementsByTagName("A")) {
-						++page_no
-						if (anchor.href.includes(page_url)) {
-							break
-						}
+				for (const anchor of doc.querySelectorAll(".list > a")) {
+					++page_no
+					if (anchor.href.includes(page_url)) {
+						break
 					}
 				}
 				return { url: removeSlash(url), page_no: page_no, index_url: index_url }
@@ -1651,433 +1347,9 @@ class Akatsuki extends TxtMiruSitePlugin {
 		}
 		return null
 	}
-	Name = () => "暁"
+	Name = _ => "暁"
 }
 TxtMiruSiteManager.AddSite(new Akatsuki())
-
-//class Everystar extends TxtMiruSitePlugin {
-//	cache = []
-//	GetCacheHtml = url => {
-//		for (const item of this.cache) {
-//			if (item.url == url) {
-//				return item.html
-//			}
-//		}
-//		return null
-//	}
-//	SetCacheHtml = (url, html) => {
-//		if (this.cache.length > 5) {
-//			this.cache.shift()
-//		}
-//		this.cache.push({ url: url, html: html })
-//	}
-//	Match = url => url.match(/https:\/\/estar\.jp/)
-//	getIndexes = async (txtMiru, id) => {
-//		let indexes = []
-//		let max_page = 1
-//		for (let page = 1; page <= max_page; ++page) {
-//			const url = `https://estar.jp/novels/${id}/episodes?page=${page}`
-//			const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
-//				url: url,
-//				charset: "UTF-8",
-//			})}`
-//			await fetch(req_url, null)
-//				.then(response => response.text())
-//				.then(text => {
-//					const doc = TxtMiruLib.HTML2Document(text)
-//					for (const node of getChildFullLevel(doc.body)) {
-//						if (node.className == "link link" && hasParentClassName(node, "episodeList")) {
-//							if (node.innerText && node.innerText.match(/…([0-9]+)ページ/)) {
-//								indexes.push({ type: "index", href: `./viewer?page=${RegExp.$1 | 0}`, name: node.innerText, update_date: "", page: RegExp.$1 | 0 })
-//							}
-//						} else if (max_page == 1 && node.className == "currentPage" && hasParentClassName(node, "pager")) {
-//							if (node.innerText.match(/[0-9]+\/([0-9]+)/)) {
-//								max_page = RegExp.$1 | 0;
-//							}
-//						}
-//					}
-//				})
-//		}
-//		return indexes
-//	}
-//	GetDocument = async (txtMiru, url) => {
-//		let req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
-//			url: url,
-//			charset: "UTF-8",
-//		})}`
-//		const fetchOpt = getFetchOption(txtMiru)
-//		return fetch(req_url, fetchOpt)
-//			.then(response => response.text())
-//			.then(async text => {
-//				const doc = TxtMiruLib.HTML2Document(text)
-//				let indexes = []
-//				if (url.replace(/\?.*/, "").match(/novels\/([0-9]+)\/*$/)) {
-//					indexes = await this.getIndexes(txtMiru, RegExp.$1)
-//				}
-//				let dummy_url = url
-//				if (!dummy_url.match(/viewer/)) {
-//					dummy_url = appendSlash(url) + "index.html"
-//				}
-//				TxtMiruLib.KumihanMod(dummy_url, doc)
-//				let remove_nodes = []
-//				for (const id of ["trace", "header", "footer"]) {
-//					remove_nodes.push(doc.getElementById(id))
-//				}
-//				for (const className of ["spacer"]) {
-//					for (const e of doc.getElementsByClassName(className)) {
-//						remove_nodes.push(e)
-//					}
-//				}
-//				for (const e of doc.getElementsByTagName("IFRAME")) {
-//					remove_nodes.push(e)
-//				}
-//				for (const e of remove_nodes) {
-//					if (e) {
-//						e.parentNode.removeChild(e)
-//					}
-//				}
-//				remove_nodes = []
-//				let item = {
-//					className: "Everystar",
-//					"title": doc.title,
-//					"episode-index-text": "エブリスタ",
-//					"episode-index": "https://estar.jp"
-//				}
-//				const forcePager = checkForcePager(doc, item)
-//				if (indexes.length > 0) {
-//					let title = ""
-//					let author = ""
-//					let copy = ""
-//					let description = ""
-//					let index = ""
-//					for (const el of doc.getElementsByClassName("title")) {
-//						if (hasParentClassName(el, "main")) {
-//							title = el.innerText
-//							break
-//						}
-//					}
-//					for (const el of doc.getElementsByClassName("copy")) {
-//						if (hasParentClassName(el, "main")) {
-//							copy = el.innerText
-//							break
-//						}
-//					}
-//					for (const el of doc.getElementsByClassName("nickname")) {
-//						author = el.innerText
-//						break
-//					}
-//					for (const meta of doc.getElementsByTagName("META")) {
-//						if (meta.name == "description") {
-//							const el = doc.getElementsByClassName("textMore")
-//							if (el.length > 0) {
-//								description = meta.content
-//							}
-//						}
-//					}
-//					for (const i of indexes) {
-//						index += `<div class="novel-toc-episode"><a href="${TxtMiruLib.ConvertAbsoluteURL(dummy_url, i["href"])}">${i["name"].replace("\n", "").replace(/ +$/, "")}</a></div>`
-//					}
-//					item["title"] = title
-//					item["html"] = `<div class="title">${title}</div><div class="nickname">${author}</div><div>${copy}</div><h3>あらすじ</h3><div class="content">${description}</div><h3>目次</h3><div class="content">${index}</div>`
-//				} else {
-//					for (const e of doc.getElementsByTagName("DIV")) {
-//						if (e.className == "body") {
-//							e.style = ""
-//						}
-//					}
-//					let title_author = ""
-//					let cur_page = 0
-//					if (url.match(/page=([0-9]+)/)) {
-//						cur_page = parseInt(RegExp.$1)
-//						let index_url = ""
-//						url = appendSlash(url)
-//						if (url.match(/(https:\/\/estar\.jp\/novels\/[0-9]+)/)) {
-//							index_url = RegExp.$1
-//							title_author = this.GetCacheHtml(index_url)
-//							if (!title_author) {
-//								const item = await this.GetInfo(txtMiru, url)
-//								title_author = `<div class="title"><a href='${index_url}'>${item.name}</a></div><div class="nickname">${item.author}</div>`
-//								if (title_author) {
-//									this.SetCacheHtml(index_url, title_author)
-//								} else {
-//									title_author = ""
-//								}
-//							}
-//						}
-//					}
-//					let max_page = cur_page
-//					for (const el of doc.getElementsByClassName("pageNumber")) {
-//						if (el.innerText && el.innerText.match(/([0-9]+)ページ/)) {
-//							max_page = parseInt(RegExp.$1)
-//						}
-//					}
-//					for (const el_a of doc.getElementsByTagName("A")) {
-//						const href = el_a.getAttribute("href") || ""
-//						if (!href.match(/^http/)) {
-//							el_a.href = TxtMiruLib.ConvertAbsoluteURL(url, href)
-//						}
-//						if (href.match(/https:\/\/twitter\.com/)) {
-//							remove_nodes.push(el_a)
-//						}
-//						if (el_a.className == "link link") {
-//							if (el_a.innerText && el_a.innerText.match(/…([0-9]+)ページ/)) {
-//								const page = RegExp.$1
-//								el_a.href = TxtMiruLib.ConvertAbsoluteURL(dummy_url, href) + "viewer?page=" + page
-//							}
-//						}
-//					}
-//					if (cur_page > 1) {
-//						item["prev-episode"] = removeSlash(TxtMiruLib.ConvertAbsoluteURL(dummy_url, "viewer?page=" + (cur_page - 1)))
-//						item["prev-episode-text"] = "前へ"
-//					}
-//					if (cur_page < max_page) {
-//						item["next-episode"] = removeSlash(TxtMiruLib.ConvertAbsoluteURL(dummy_url, "viewer?page=" + (cur_page + 1)))
-//						item["next-episode-text"] = "次へ"
-//					}
-//					item["episode-index"] = TxtMiruLib.ConvertAbsoluteURL(dummy_url, "")
-//					item["episode-index-text"] = "目次へ"
-//					for (const e of remove_nodes) {
-//						if (e) {
-//							e.parentNode.removeChild(e)
-//						}
-//					}
-//					item["html"] = `${title_author}<br>${cur_page}/${max_page}<br><br>${doc.body.innerHTML}`
-//				}
-//				return item
-//			})
-//			.catch(err => {
-//				return checkFetchAbortError(err, url)
-//			})
-//	}
-//	GetInfo = async (txtMiru, url, callback = null) => {
-//		if (Array.isArray(url)) {
-//			let results = []
-//			for (const u of url) {
-//				if (this.Match(u)) {
-//					const item = await this.GetInfo(txtMiru, u, callback)
-//					if (item != null) {
-//						results.push(item)
-//					}
-//				}
-//			}
-//			return results
-//		} else if (this.Match(url)) {
-//			if (callback) {
-//				callback([url])
-//			}
-//			let index_url = ""
-//			url = appendSlash(url)
-//			if (url.match(/(https:\/\/estar\.jp\/novels\/[0-9]+)/)) {
-//				index_url = RegExp.$1
-//			} else {
-//				return null
-//			}
-//			let req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
-//				url: `${index_url}`,
-//				charset: "UTF-8"
-//			})}`
-//			let html = await fetch(req_url)
-//				.then(response => response.text())
-//				.then(text => text)
-//			let parser = new DOMParser()
-//			let doc = parser.parseFromString(html, "text/html")
-//			let title = ""
-//			let author = ""
-//			let max_page = 1
-//			for (const el of doc.getElementsByClassName("title")) {
-//				if (hasParentClassName(el, "main")) {
-//					title = el.innerText
-//					break
-//				}
-//			}
-//			for (const el of doc.getElementsByClassName("nickname")) {
-//				author = el.innerText
-//				break
-//			}
-//			//
-//			req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
-//				url: `${index_url}/viewer?page=1`,
-//				charset: "UTF-8"
-//			})}`
-//			html = await fetch(req_url)
-//				.then(response => response.text())
-//				.then(text => text)
-//			doc = parser.parseFromString(html, "text/html")
-//			for (const el of doc.getElementsByClassName("pageNumber")) {
-//				if (el.innerText && el.innerText.match(/([0-9]+)ページ/)) {
-//					max_page = parseInt(RegExp.$1)
-//				}
-//			}
-//			return {
-//				url: removeSlash(url),
-//				max_page: max_page,
-//				name: title,
-//				author: author
-//			}
-//		}
-//		return null
-//	}
-//	GetPageNo = async (txtMiru, url) => {
-//		if (this.Match(url)) {
-//			url = appendSlash(url)
-//			if (url.match(/(https:\/\/estar\.jp\/novels\/[0-9]+)\/.*page=([0-9]+)\/$/)) {
-//				const index_url = RegExp.$1
-//				const page_no = RegExp.$2
-//				return { url: removeSlash(url), page_no: page_no, index_url: index_url }
-//			} else {
-//				return { url: removeSlash(url), page_no: 0, index_url: removeSlash(url) }
-//			}
-//		}
-//		return null
-//	}
-//	Name = () => "エブリスタ"
-//}
-//TxtMiruSiteManager.AddSite(new Everystar())
-//
-//class Magnet extends TxtMiruSitePlugin {
-//	Match = url => url.match(/https:\/\/www\.magnet\-novels\.com/)
-//	novelAPI = (func, param) => fetch(`${func}`, {
-//		method: 'POST',
-//		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-//		body: param
-//	}).then(response => response.json())
-//	GetDocument = async (txtMiru, url) => {
-//		let item = {
-//			className: "Magnet",
-//			"episode-index-text": "マグネット",
-//			"episode-index": "https://www.magnet-novels.com"
-//		}
-//		if (url.match(/novels\/([0-9]+)\/episodes\/([0-9]+)/)) {
-//			const novel_id = RegExp.$1
-//			const section_id = RegExp.$2
-//			const novel_section = await this.novelAPI("https://www.magnet-novels.com/api/web/v2/reader/getNovelSection", `novel_id=${novel_id}&section_id=${section_id}`)
-//			const novel_info = await this.novelAPI("https://www.magnet-novels.com/api/novel/reader/getNovelInfo", `novel_id=${novel_id}`)
-//			const novel_contents = await this.novelAPI("https://www.magnet-novels.com/api/web/v2/reader/getNovelContents", `novel_id=${novel_id}`)
-//			let prev_episode = null
-//			let next_episode = null
-//			let sub_title = null
-//			const contents_data = novel_contents.data
-//			for (let i = 0; i < contents_data.length; ++i) {
-//				const data = contents_data[i]
-//				if (data.type == 0) {
-//					if (data.id == section_id) {
-//						if (i < contents_data.length - 1) {
-//							next_episode = contents_data[i + 1]
-//						}
-//						break
-//					}
-//					prev_episode = data
-//				} else {
-//					sub_title = data
-//				}
-//			}
-//			item["episode-index-text"] = "目次"
-//			item["episode-index"] = `https://www.magnet-novels.com/novels/${novel_id}`
-//			if (prev_episode) {
-//				item["prev-episode"] = `https://www.magnet-novels.com/novels/${novel_id}/episodes/${prev_episode.id}`
-//				item["prev-episode-text"] = `前へ ${prev_episode.title}`
-//			}
-//			if (next_episode) {
-//				item["next-episode"] = `https://www.magnet-novels.com/novels/${novel_id}/episodes/${next_episode.id}`
-//				item["next-episode-text"] = `次へ ${next_episode.title}`
-//			}
-//			item["title"] = novel_info.data.name
-//			item["html"] = `<div class="title"><a href="https://www.magnet-novels.com/novels/${novel_id}">${novel_info.data.name}</a></div><div class="author">${novel_info.data.author.name}</div><div class="subtitle">${sub_title ? sub_title.title : ""}</div><div class="subtitle">${novel_section.data.title}</div><div class="main">${novel_section.data.content_html}</div>`
-//		} else if (url.match(/novels\/([0-9]+)/)) {
-//			const novel_id = RegExp.$1
-//			const novel_info = await this.novelAPI("https://www.magnet-novels.com/api/novel/reader/getNovelInfo", `novel_id=${novel_id}`)
-//			const novel_contents = await this.novelAPI("https://www.magnet-novels.com/api/web/v2/reader/getNovelContents", `novel_id=${novel_id}`)
-//			let html_arr = []
-//			for (const data of novel_contents.data) {
-//				if (data.type == 0) {
-//					html_arr.push(`<div class="novel-toc-episode"><a href="https://www.magnet-novels.com/novels/${novel_id}/episodes/${data.id}">${data.title}</a></div>`)
-//				} else {
-//					html_arr.push(`<div class="novel-subtitle">${data.title}</div>`)
-//				}
-//			}
-//			item["title"] = novel_info.data.name
-//			item["html"] = `<div class="title">${novel_info.data.name}</div><div class="author">${novel_info.data.author.name}</div><div>${html_arr.join("")}</div>`
-//		} else {
-//			let req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
-//				url: url,
-//				charset: "UTF-8",
-//			})}`
-//			const fetchOpt = getFetchOption(txtMiru)
-//			return fetch(req_url, fetchOpt)
-//				.then(response => response.text())
-//				.then(async text => {
-//					const doc = TxtMiruLib.HTML2Document(text)
-//					item["title"] = doc.title
-//					item["html"] = doc.body.innerHTML
-//					return item
-//				})
-//				.catch(err => {
-//					return checkFetchAbortError(err, url)
-//				})
-//		}
-//
-//		return Promise.resolve(item)
-//	}
-//	GetInfo = async (txtMiru, url, callback = null) => {
-//		if (Array.isArray(url)) {
-//			let results = []
-//			for (const u of url) {
-//				if (this.Match(u)) {
-//					const item = await this.GetInfo(txtMiru, u, callback)
-//					if (item != null) {
-//						results.push(item)
-//					}
-//				}
-//			}
-//			return results
-//		} else if (this.Match(url)) {
-//			if (callback) {
-//				callback([url])
-//			}
-//			let novel_id = ""
-//			let index_url = ""
-//			if (url.match(/novels\/([0-9]+)/)) {
-//				novel_id = RegExp.$1
-//				index_url = `https://www.magnet-novels.com/novels/${novel_id}`
-//			} else {
-//				return null
-//			}
-//			const novel_info = await this.novelAPI("https://www.magnet-novels.com/api/novel/reader/getNovelInfo", `novel_id=${novel_id}`)
-//			const novel_contents = await this.novelAPI("https://www.magnet-novels.com/api/web/v2/reader/getNovelContents", `novel_id=${novel_id}`)
-//			return {
-//				url: removeSlash(url),
-//				max_page: novel_contents.data.length,
-//				name: novel_info.data.name,
-//				author: novel_info.data.author.name
-//			}
-//		}
-//		return null
-//	}
-//	GetPageNo = async (txtMiru, url) => {
-//		if (this.Match(url)) {
-//			url = appendSlash(url)
-//			if (url.match(/novels\/([0-9]+)\/episodes\/([0-9]+)/)) {
-//				const novel_id = RegExp.$1
-//				const section_id = RegExp.$2
-//				const novel_contents = await this.novelAPI("https://www.magnet-novels.com/api/web/v2/reader/getNovelContents", `novel_id=${novel_id}`)
-//				let page_no = 0
-//				for (const item of novel_contents.data) {
-//					++page_no
-//					if (item.id == section_id) {
-//						break
-//					}
-//				}
-//				return { url: removeSlash(url), page_no: page_no, index_url: `https://www.magnet-novels.com/novels/${novel_id}` }
-//			} else if (url.match(/novels\/([0-9]+)/)) {
-//				const novel_id = RegExp.$1
-//				return { url: removeSlash(url), page_no: 0, index_url: `https://www.magnet-novels.com/novels/${novel_id}` }
-//			}
-//		}
-//		return null
-//	}
-//	Name = () => "マグネット"
-//}
-//TxtMiruSiteManager.AddSite(new Magnet())
 
 class Pixiv extends TxtMiruSitePlugin {
 	Match = url => url.match(/https:\/\/www\.pixiv\.net\/novel\//)
@@ -2087,9 +1359,13 @@ class Pixiv extends TxtMiruSitePlugin {
 	})}`).then(response => response.json())
 	GetDocument = async (txtMiru, url) => {
 		let query_url = url
-		let result
-		if (result = url.match(/\?id=([0-9]+$)/)) {
-			query_url = `https://www.pixiv.net/ajax/novel/${result[1]}?lang=ja`
+		const [novel_id, series] = this._getNovelId(url)
+		if (novel_id) {
+			if (series){
+				query_url = `https://www.pixiv.net/ajax/novel/series/${novel_id}?lang=ja`
+			} else {
+				query_url = `https://www.pixiv.net/ajax/novel/${novel_id}?lang=ja`
+			}
 		}
 		const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
 			url: query_url,
@@ -2099,128 +1375,62 @@ class Pixiv extends TxtMiruSitePlugin {
 		return fetch(req_url, fetchOpt)
 			.then(response => response.text())
 			.then(async text => {
-				let item = {
+				const item = {
 					className: "Pixiv",
 					"episode-index-text": "pixiv",
 					"episode-index": "https://www.pixiv.net/novel/"
 				}
-				if (result && text[0] === '{') {
-					const json = JSON.parse(text)
-					const jsonBody = json["body"]
-					if (jsonBody["seriesNavData"]) {
-						const jsonNext = jsonBody["seriesNavData"]["next"]
-						const jsonPrev = jsonBody["seriesNavData"]["prev"]
-						if (jsonNext) {
-							item["next-episode"] = `https://www.pixiv.net/novel/show.php?id=${jsonNext.id}`
-							item["next-episode-text"] = "次へ"
-						}
-						if (jsonPrev) {
-							item["prev-episode"] = `https://www.pixiv.net/novel/show.php?id=${jsonPrev.id}`
-							item["prev-episode-text"] = "前へ"
-						}
-						item["episode-index"] = `https://www.pixiv.net/novel/series/${jsonBody["seriesNavData"].seriesId}`
-						item["episode-index-text"] = "目次へ"
-					}
-					const html = jsonBody["content"].replace(/\n|\r\n|\r/g, '<br>').replaceAll("<br>[newpage]<br>", "<hr>")
-					const doc = TxtMiruLib.HTML2Document(html)
+				if (novel_id && text[0] === '{') {
+					const jsonBody = JSON.parse(text)["body"]
 					item["title"] = jsonBody["title"]
-					TxtMiruLib.KumihanMod(url, doc)
-					item["html"] = `<h1>${jsonBody["title"]||""}</h1><h2>${jsonBody["userName"]||""}</h2>${doc.body.innerHTML}`
-					return item
-				}
-				let doc = TxtMiruLib.HTML2Document(text)
-				item["title"] = doc.title
-				let author = ""
-				TxtMiruLib.KumihanMod(url, doc)
-				const forcePager = checkForcePager(doc, item)
-				if (url.match(/https:\/\/www\.pixiv\.net\/novel\/member\.php\?id=/)) {
-					// [pixiv] プロフィール
-					let nodes = doc.getElementsByTagName("h1")
-					for (let i = nodes.length - 1; i >= 0; --i) {
-						const node = nodes[i]
-						if (node.className.match(/^name$/) && node.innerText.length > 0) {
-							author = node.innerText
-						}
-					}
-					nodes = doc.getElementsByTagName("h2");
-					for (let i = nodes.length - 1; i >= 0; --i) {
-						const node = nodes[i]
-						if (node.className.match(/^name$/) && node.innerText.length > 0) {
-							author = node.innerText
-						}
-					}
-					let profilecomment = ""
-					let html = ""
-					nodes = doc.getElementsByTagName("div")
-					for (let i = nodes.length - 1; i >= 0; --i) {
-						const node = nodes[i]
-						if (node.className.match(/novel\-contents/)) {
-							profilecomment += node.innerHTML
-						} else if (node.className.match(/require\-register/)) {
-							html += node.innerHTML
-						}
-					}
-					item["html"] = `${profilecomment}${html}`
-				} else if (url.match(/https:\/\/www\.pixiv\.net\/novel\//)) {
-					// [pixiv] 小説
-					let title = ""
-					let author = ""
-					let html_arr = []
-					if (url.match(/https:\/\/www\.pixiv\.net\/novel\/series\/([0-9]+)/)) {
-						const id = RegExp.$1
-						const novel_contents = await this.novelAPI(txtMiru, `https://www.pixiv.net/ajax/novel/series/${id}?lang=ja`)
-						title = novel_contents.body.title
-						author = novel_contents.body.userName
+					if (series){
+						const html_arr = []
 						html_arr.push("<br>")
-						html_arr.push(novel_contents.body.extraData.meta.description)
+						html_arr.push(jsonBody.extraData.meta.description)
 						let order = 0
 						html_arr.push(`<h3>目次</h3><ol class="novel-toc-items">`)
 						do {
-							const json = await this.novelAPI(txtMiru, `https://www.pixiv.net/ajax/novel/series_content/${id}?limit=10&last_order=${order}&order_by=asc&lang=ja`)
+							const json = await this.novelAPI(txtMiru, `https://www.pixiv.net/ajax/novel/series_content/${novel_id}?limit=20&last_order=${order}&order_by=asc&lang=ja`)
 							if (json.body.page["seriesContents"].length <= 0) {
 								break
 							}
 							for (const series_content of json.body.page["seriesContents"]) {
-								let date = new Date()
+								const date = new Date()
 								date.setTime(series_content.reuploadTimestamp * 1000)
 								const date_str = date.getFullYear() + "年" + (date.getMonth() + 1) + "月" + date.getDate() + "日"
 								html_arr.push(`<li class="novel-toc-episode"><a href='https://www.pixiv.net/novel/show.php?id=${series_content.id}'>${series_content.title}</a><span class="novel-toc-episode-datePublished">${date_str}</span></li>`)
 							}
-							order += 10
+							order += 20
+							if (order > jsonBody.total) {
+								break
+							}
 						} while (true)
 						html_arr.push("</ol>")
-					} else if (url.match(/https:\/\/www\.pixiv\.net\/novel\/show\.php\?id=([0-9]+)/)) {
-						const id = RegExp.$1
-						try {
-							const meta_content = doc.getElementsByName('preload-data')[0].content
-							//
-							const json = JSON.parse(meta_content)
-							const data = json.novel[id]
-							const content = data.content
-							author = data.userName
-							title = data.title
-							try {
-								title = `<a href="https://www.pixiv.net/novel/series/${data.seriesNavData.seriesId}">${data.seriesNavData.title}</a>`
-								item["episode-index"] = `https://www.pixiv.net/novel/series/${data.seriesNavData.seriesId}`
-								item["episode-index-text"] = "目次へ"
-							} catch (e) { }
-							try {
-								item["next-episode"] = `https://www.pixiv.net/novel/show.php?id=${data.seriesNavData.next.id}`
-								item["next-episode-text"] = "次へ"
-							} catch (e) { }
-							try {
-								item["prev-episode"] = `https://www.pixiv.net/novel/show.php?id=${data.seriesNavData.prev.id}`
-								item["prev-episode-text"] = "前へ"
-							} catch (e) { }
-							let doc0 = TxtMiruLib.HTML2Document(content)
-							TxtMiruLib.KumihanMod(url, doc0)
-							html_arr.push(doc0.body.innerHTML)
-						} catch (e) {
+						item["html"] = `<div class="title">${item["title"]}</div><div class="author">${jsonBody.userName}</div><div class="main">${html_arr.join("")}</div>`
+					} else {
+						if (jsonBody["seriesNavData"]) {
+							const jsonNext = jsonBody["seriesNavData"]["next"]
+							const jsonPrev = jsonBody["seriesNavData"]["prev"]
+							if (jsonNext) {
+								setItemEpisodeText("next-episode", `https://www.pixiv.net/novel/show.php?id=${jsonNext.id}`, "次へ", item)
+							}
+							if (jsonPrev) {
+								setItemEpisodeText("prev-episode", `https://www.pixiv.net/novel/show.php?id=${jsonPrev.id}`, "前へ", item)
+							}
+							setItemEpisodeText("episode-index", `https://www.pixiv.net/novel/series/${jsonBody["seriesNavData"].seriesId}`, "目次へ", item)
 						}
+						const html = jsonBody["content"].replace(/\n|\r\n|\r/g, '<br>').replaceAll("<br>[newpage]<br>", "<hr>")
+						const doc = TxtMiruLib.HTML2Document(html)
+						TxtMiruLib.KumihanMod(url, doc)
+						item["html"] = `<h1>${jsonBody["title"]||""}</h1><h2>${jsonBody["userName"]||""}</h2>${doc.body.innerHTML}`
 					}
-					item["html"] = `<div class="title">${title}</div><div class="author">${author}</div><div class="main">${html_arr.join("")}</div>`
+				} else {
+					const doc = TxtMiruLib.HTML2Document(text)
+					item["title"] = doc.title
+					TxtMiruLib.KumihanMod(url, doc)
+					item["html"] = doc.body.innerHTML
 				}
-				return Promise.resolve(item)
+				return item
 			})
 			.catch(err => checkFetchAbortError(err, url))
 	}
@@ -2236,6 +1446,15 @@ class Pixiv extends TxtMiruSitePlugin {
 			return { pageCount: json.novel[novel_id].pageCount, index_url: `https://www.pixiv.net/novel/series/${json.novel[novel_id].seriesNavData.seriesId}` }
 		}
 		return { pageCount: 0, index_url: url }
+	}
+	_getNovelId = url => {
+		let r
+		if (r = url.match(/https:\/\/www\.pixiv\.net\/novel\/show\.php\?id=([0-9]+)/)) {
+			return [r[1], false]
+		} else if (r = url.match(/novel\/series\/([0-9]+)/)) {
+			return [r[1], true]
+		}
+		return [null, null]
 	}
 	GetInfo = async (txtMiru, url, callback = null) => {
 		if (Array.isArray(url)) {
@@ -2253,16 +1472,10 @@ class Pixiv extends TxtMiruSitePlugin {
 			if (callback) {
 				callback([url])
 			}
-			let r
-			let novel_id = ""
-			if (r = url.match(/https:\/\/www\.pixiv\.net\/novel\/show\.php\?id=([0-9]+)/)) {
-				novel_id = r[1]
-			} else if (r = url.match(/novel\/series\/([0-9]+)/)) {
-				novel_id = r[1]
-			} else {
+			const [novel_id, _] = this._getNovelId(url)
+			if (!novel_id) {
 				return null
 			}
-			//
 			const novel_contents = await this.novelAPI(txtMiru, `https://www.pixiv.net/ajax/novel/series/${novel_id}?lang=ja`)
 			return {
 				url: removeSlash(url),
@@ -2275,27 +1488,26 @@ class Pixiv extends TxtMiruSitePlugin {
 	}
 	GetPageNo = async (txtMiru, url) => {
 		if (this.Match(url)) {
-			let r
 			url = appendSlash(url)
-			if (r = url.match(/https:\/\/www\.pixiv\.net\/novel\/show\.php\?id=([0-9]+)/)) {
-				const novel_id = r[1]
+			const [novel_id, series] = this._getNovelId(url)
+			if (novel_id){
+				if (series) {
+					return { url: removeSlash(url), page_no: 0, index_url: `https://www.pixiv.net/novel/series/${novel_id}` }
+				}
 				const data = await this._getNovelData(txtMiru, url, novel_id)
 				return { url: removeSlash(url), page_no: parseInt(data.pageCount) + 1, index_url: data.index_url }
-			} else if (r = url.match(/novels\/series\/([0-9]+)/)) {
-				const novel_id = r[1]
-				return { url: removeSlash(url), page_no: 0, index_url: `https://www.pixiv.net/novel/series/${novel_id}` }
 			}
 		}
 		return null
 	}
-	Name = () => "pixiv"
+	Name = _ => "pixiv"
 }
 TxtMiruSiteManager.AddSite(new Pixiv())
 
 class NovelupPlus extends TxtMiruSitePlugin {
 	Match = url => url.match(/https:\/\/novelup\.plus/)
-	GetDocument = (txtMiru, url) => {
-		let req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
+	GetDocument = async (txtMiru, url) => {
+		const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
 			url: url,
 			charset: "UTF-8"
 		})}`
@@ -2304,7 +1516,6 @@ class NovelupPlus extends TxtMiruSitePlugin {
 			.then(response => response.text())
 			.then(text => {
 				const doc = TxtMiruLib.HTML2Document(text)
-				TxtMiruLib.KumihanMod(url, doc)
 				const item = {
 					className: "NovelupPlus",
 					"title": doc.title,
@@ -2313,12 +1524,12 @@ class NovelupPlus extends TxtMiruSitePlugin {
 					"episode-index-text": "小説投稿サイトノベルアップ＋",
 					"episode-index": "https://novelup.plus/"
 				}
+				TxtMiruLib.KumihanMod(url, doc)
 				const forcePager = checkForcePager(doc, item)
 				const m_index_url = url.match(/https:\/\/novelup\.plus\/story\/[\d]+(.*)/)
 				if (m_index_url && m_index_url[1]) {
 					for (const e of doc.getElementsByClassName("novel_title")) {
-						item["episode-index-text"] = e.innerText
-						item["episode-index"] = m_index_url[0]
+						setItemEpisodeText("episode-index", m_index_url[0], e.innerText, item)
 					}
 				}
 				for (const anchor of doc.getElementsByTagName("A")) {
@@ -2365,7 +1576,7 @@ class NovelupPlus extends TxtMiruSitePlugin {
 			for (const u of url) {
 				if (this.Match(u)) {
 					const item = await this.GetInfo(txtMiru, u, callback)
-					if (item != null) {
+					if (item !== null) {
 						results.push(item)
 					}
 				}
@@ -2387,11 +1598,7 @@ class NovelupPlus extends TxtMiruSitePlugin {
 				url: `${index_url}`,
 				charset: "UTF-8"
 			})}`
-			const html = await fetch(req_url)
-				.then(response => response.text())
-				.then(text => text)
-			const parser = new DOMParser()
-			const doc = parser.parseFromString(html, "text/html")
+			const doc = await getHtmlDocument(req_url)
 			let max_page = 1
 			let title = doc.title
 			let author = doc.title
@@ -2428,24 +1635,14 @@ class NovelupPlus extends TxtMiruSitePlugin {
 				while (true) {
 					let bMatchUrl = false
 					const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
-						url: url_page == 1 ? `${index_url}` : `${index_url}?p=${url_page}`,
+						url: url_page === 1 ? `${index_url}` : `${index_url}?p=${url_page}`,
 						charset: "UTF-8"
 					})}`
-					const html = await fetch(req_url)
-						.then(response => response.text())
-						.then(text => text)
-					const parser = new DOMParser()
-					const doc = parser.parseFromString(html, "text/html")
-					for (const e of doc.getElementsByClassName("episode_link")) {
-						for (const anchor of e.getElementsByTagName("A")) {
-							++page_no
-							if (anchor.href.includes(page_url)) {
-								bMatchUrl = true
-								break
-							}
-							break
-						}
-						if (bMatchUrl) {
+					const doc = await getHtmlDocument(req_url)
+					for (const anchor of doc.querySelectorAll(".episodeListItem > a:first-of-type")) {
+						++page_no
+						if (anchor.href.includes(page_url)) {
+							bMatchUrl = true
 							break
 						}
 					}
@@ -2466,12 +1663,11 @@ class NovelupPlus extends TxtMiruSitePlugin {
 						break
 					}
 				}
-				console.log(page_no)
 				return { url: removeSlash(url), page_no: page_no, index_url: index_url }
 			}
 		}
 		return null
 	}
-	Name = () => "小説投稿サイトノベルアップ＋"
+	Name = _ => "小説投稿サイトノベルアップ＋"
 }
 TxtMiruSiteManager.AddSite(new NovelupPlus())

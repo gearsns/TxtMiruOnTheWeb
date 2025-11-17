@@ -13,10 +13,10 @@ export class TxtMiruDB {
 	}
 	//add = async item => await this.connection.insert(item)
 	//select = async item => await this.connection.select(item)
-	getSettingList = async () => await this.db.Setting.toArray()
-	setSetting = async (item) => {
+	getSettingList = async _ => await this.db.Setting.toArray()
+	setSetting = async item => {
 		if (Array.isArray(item)) {
-			return await this.db.transaction('rw', this.db.Setting, async () => {
+			return await this.db.transaction('rw', this.db.Setting, async _ => {
 				for (const i of item) {
 					await this.db.Setting.put(i)
 				}
@@ -53,7 +53,7 @@ export class TxtMiruDB {
 			max_page: max_page
 		})
 	}
-	getFavoriteList = async () => {
+	getFavoriteList = async _ => {
 		if (this.txtMiru.setting["UserID"]) {
 			const server = this.txtMiru.setting["WebServerUrl"]
 			const req_url = `${server}?${new URLSearchParams({ func: "get_favorites", uid: this.txtMiru.setting["UserID"], _no_cache_: Date.now().toString() })}`

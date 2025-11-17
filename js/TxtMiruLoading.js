@@ -34,7 +34,7 @@ export class TxtMiruLoading {
 		}
 		this.loadingElement.querySelector(".loader").addEventListener("dblclick", this.cancel)
 	}
-	end = () => {
+	end = _ => {
 		this.cancel()
 		this.txtMiru.fetchAbortController = null
 		this.loadingElement.className = "hide-loading"

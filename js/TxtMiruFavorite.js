@@ -1,6 +1,6 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.19.0'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.19.0'
-import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.19.0"
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.19.3'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.19.3'
+import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.19.3"
 
 export class TxtMiruFavorite {
 	constructor(txtMiru) {
@@ -40,131 +40,61 @@ export class TxtMiruFavorite {
 <button id="save-favorite-url-close" class="seigaiha_blue">閉じる</button>
 </div></div>`
 		document.body.appendChild(this.urlElement)
+		this.setEvent(txtMiru)
 	}
-
-	select_row = e => {
-	}
-	show = async (txtMiru) => {
-		if (txtMiru.display_popup) {
+	show = async _ => {
+		if (this.txtMiru.display_popup) {
 			return
 		}
-		txtMiru.display_popup = true
+		this.txtMiru.display_popup = true
 		this.favoriteElement.className = "show-favorite"
 		this.reload()
 	}
-
-	dispList = () => {
-		const e_novel_list = document.getElementById("novel_list")
+	dispList = _ => {
 		const list = this.favoriteList
-		let tr_list = []
+		const tr_list = []
 		let num = 0
 		try {
-			if (!list || list.length == 0) {
+			if (!list || list.length === 0) {
 				tr_list.push(`<tr><td colspan="6" style="width:100vw">お気に入りが登録されていません。</td></tr>`)
 			} else {
 				const column_name = this.txtMiru.setting["favorite-sort-column"]
 				const column_name_order = this.txtMiru.setting["favorite-sort-column-order"]
-				const order_asc = column_name === column_name_order
+				const order_dir = (column_name === column_name_order) ? 1 : -1
 				if (column_name === "list_no") {
-					list.sort((a, b) => {
-						let r = 0
-						if (order_asc) {
-							r = parseInt(a.id) - parseInt(b.id)
-						} else {
-							r = parseInt(b.id) - parseInt(a.id)
-						}
-						return r
-					})
+					list.sort((a, b) => (parseInt(a.id) - parseInt(b.id)) * order_dir)
 				} else if (column_name === "title") {
-					list.sort((a, b) => {
-						let r = 0
-						if (order_asc) {
-							r = a.name.localeCompare(b.name)
-						} else {
-							r = b.name.localeCompare(a.name)
-						}
-						if (r === 0) {
-							r = a.author.localeCompare(b.author)
-						}
-						if (r === 0) {
-							r = parseInt(a.id) - parseInt(b.id)
-						}
-						return r
-					})
+					list.sort((a, b) => 
+						a.name.localeCompare(b.name) * order_dir
+						|| a.author.localeCompare(b.author)
+						|| parseInt(a.id) - parseInt(b.id)
+					)
 				} else if (column_name === "page") {
-					list.sort((a, b) => {
-						let r = 0
-						if (order_asc) {
-							r = parseInt(a.max_page) - parseInt(b.max_page)
-						} else {
-							r = parseInt(b.max_page) - parseInt(a.max_page)
-						}
-						if (r === 0) {
-							r = a.name.localeCompare(b.name)
-						}
-						if (r === 0) {
-							r = a.author.localeCompare(b.author)
-						}
-						if (r === 0) {
-							r = parseInt(a.id) - parseInt(b.id)
-						}
-						return r
-					})
+					list.sort((a, b) =>
+						(parseInt(a.max_page) - parseInt(b.max_page)) * order_dir
+						|| a.name.localeCompare(b.name)
+						|| a.author.localeCompare(b.author)
+						|| parseInt(a.id) - parseInt(b.id)
+					)
 				} else if (column_name === "author") {
-					list.sort((a, b) => {
-						let r = 0
-						if (order_asc) {
-							r = a.author.localeCompare(b.author)
-						} else {
-							r = b.author.localeCompare(a.author)
-						}
-						if (r === 0) {
-							r = a.name.localeCompare(b.name)
-						}
-						if (r === 0) {
-							r = parseInt(a.id) - parseInt(b.id)
-						}
-						return r
-					})
+					list.sort((a, b) => 
+						a.author.localeCompare(b.author) * order_dir
+						|| a.name.localeCompare(b.name)
+						|| parseInt(a.id) - parseInt(b.id)
+					)
 				} else if (column_name === "site") {
-					list.sort((a, b) => {
-						let r = 0
-						if (order_asc) {
-							r = a.url.localeCompare(b.url)
-						} else {
-							r = b.url.localeCompare(a.url)
-						}
-						if (r === 0) {
-							r = parseInt(a.id) - parseInt(b.id)
-						}
-						return r
-					})
+					list.sort((a, b) => 
+						a.url.localeCompare(b.url) * order_dir
+						|| parseInt(a.id) - parseInt(b.id)
+					)
 				} else if (column_name === "new") {
 					list.sort((a, b) => {
-						let r = 0
 						const a_new = parseInt(a.cur_page) < parseInt(a.max_page)
 						const b_new = parseInt(b.cur_page) < parseInt(b.max_page)
-						if (order_asc) {
-							if (a_new && b_new) {
-	
-							} else if (a_new) {
-								r = -1
-							} else {
-								r = 1
-							}
-						} else {
-							if (a_new && b_new) {
-	
-							} else if (a_new) {
-								r = 1
-							} else {
-								r = -1
-							}
+						if (a_new && b_new) {
+							return parseInt(a.id) - parseInt(b.id)
 						}
-						if (r === 0) {
-							r = parseInt(a.id) - parseInt(b.id)
-						}
-						return r
+						return a_new ? -order_dir : order_dir
 					})
 				}
 				for (const item of list) {
@@ -176,7 +106,7 @@ export class TxtMiruFavorite {
 							break
 						}
 					}
-					if (item.max_page == -1) {
+					if (item.max_page === -1) {
 						item.max_page = 1
 						item.cur_page = 1
 					}
@@ -196,111 +126,83 @@ export class TxtMiruFavorite {
 		}
 		document.getElementById("novel_list_body").innerHTML = tr_list.join("")
 	}
-	reload = async () => {
+	reload = async _ => {
 		const e_novel_list = document.getElementById("novel_list")
 		e_novel_list.style.visibility = "hidden"
 		this.txtMiruLoading.begin()
-		const list = await this.txtMiruDB.getFavoriteList()
-		this.favoriteList = list
+		this.favoriteList = await this.txtMiruDB.getFavoriteList()
 		this.dispList()
 		e_novel_list.style.visibility = "visible"
 		this.txtMiruLoading.end()
 	}
-
-	setCurrentPage = async (txtMiru, url, item) => {
-		if (item["episode-index"] && item["page_no"]) {
-			await this.txtMiruDB.getFavoriteByUrl(item["episode-index"], item["page_no"], url)
-			return
-		}
-		for (const site of TxtMiruSiteManager.SiteList()) {
-			if (site.Match(url)) {
-				const page = await site.GetPageNo(txtMiru, url)
-				if (page && page.index_url) {
-					const item = await this.txtMiruDB.getFavoriteByUrl(page.index_url, page.page_no, url)
-					if (item && item.length > 0 && item[0].cur_page < page.page_no) {
-						await this.txtMiruDB.setFavorite(item[0].id, { cur_page: page.page_no, cur_url: url })
-					}
-				}
-				break
-			}
-		}
-	}
-
-	inputURL = () => {
+	inputURL = _ => {
 		this.urlElement.className = "show-input-url"
-		const url = (new URL(window.location)).searchParams.get('url')
-		if (url == null) {
-			document.getElementById("input-favorite-url").value = ""
-		} else {
-			document.getElementById("input-favorite-url").value = url
-		}
-		document.getElementById("input-favorite-url").focus()
-		document.getElementById("input-favorite-url").select()
+		const el = document.getElementById("input-favorite-url")
+		el.value = (new URL(window.location)).searchParams.get('url') || ""
+		el.focus()
+		el.select()
 	}
-	addSite = async (txtMiru) => {
+	addSite = async txtMiru => {
+		this.txtMiruLoading.begin()
 		let url = document.getElementById("input-favorite-url").value
 		if (url.match(/^n/)) {
 			url = `https://ncode.syosetu.com/${url}`
 		}
 		for (const site of TxtMiruSiteManager.SiteList()) {
-			if (site.Match(url)) {
-				const page = await site.GetPageNo(txtMiru, url)
-				if (page && page.url) {
-					const item = await this.txtMiruDB.getFavoriteByUrl(page.index_url)
-					if (item && item.length > 0) {
-						if (item[0].cur_page < page.page_no) {
-							await this.txtMiruDB.setFavorite(item[0].id, { cur_page: page.page_no, cur_url: url })
-						} else {
-							TxtMiruMessageBox.show(`${url}<br>は既に登録されています。`, { "buttons": ["閉じる"] }).then(e => { })
-						}
+			if (!site.Match(url)) { continue; }
+			const page = await site.GetPageNo(txtMiru, url)
+			if (page && page.url) {
+				const item = await this.txtMiruDB.getFavoriteByUrl(page.index_url)
+				if (item && item.length > 0) {
+					if (item[0].cur_page < page.page_no) {
+						await this.txtMiruDB.setFavorite(item[0].id, { cur_page: page.page_no, cur_url: url })
 					} else {
-						const update_item = await site.GetInfo(txtMiru, page.index_url)
-						if (update_item && update_item.name && update_item.name.length > 0) {
-							await this.txtMiruDB.addFavorite(update_item.name, update_item.author, page.index_url, page.url, page.page_no, update_item.max_page, 0)
-						} else {
-							TxtMiruMessageBox.show(`ページ情報の取得に失敗しました。<br>${url}`, { "buttons": ["閉じる"] }).then(e => { })
-						}
+						TxtMiruMessageBox.show(`${url}<br>は既に登録されています。`, { "buttons": ["閉じる"] }).then(e => { })
 					}
-					this.reload()
+				} else {
+					const update_item = await site.GetInfo(txtMiru, page.index_url)
+					if (update_item && update_item.name && update_item.name.length > 0) {
+						await this.txtMiruDB.addFavorite(update_item.name, update_item.author, page.index_url, page.url, page.page_no, update_item.max_page, 0)
+					} else {
+						TxtMiruMessageBox.show(`ページ情報の取得に失敗しました。<br>${url}`, { "buttons": ["閉じる"] }).then(e => { })
+					}
 				}
-				break
+				await this.reload()
 			}
+			break
 		}
+		this.txtMiruLoading.end()
 		this.urlElement.className = "hide-input-url"
 	}
-	setEvent = (txtMiru) => {
+	setEvent = txtMiru => {
+		const hideFavorite = _ => {
+			this.favoriteElement.className = "hide-favorite"
+			txtMiru.display_popup = false
+		}
 		// 画面内はクリックで閉じない
 		document.getElementById("favorite-box-inner").addEventListener("click", e => {
 			e.stopPropagation()
 		}, false)
 		// 画面外をクリックで閉じる
-		this.favoriteElement.addEventListener("click", e => {
-			this.favoriteElement.className = "hide-favorite"
-			txtMiru.display_popup = false
-		})
-		document.getElementById("favorite-close").addEventListener("click", e => {
-			this.favoriteElement.className = "hide-favorite"
-			txtMiru.display_popup = false
-		})
+		this.favoriteElement.addEventListener("click", hideFavorite)
+		document.getElementById("favorite-close").addEventListener("click", hideFavorite)
 		// お気に入りの追加
-		document.getElementById("favorite-regist").addEventListener("click", e => {
-			this.inputURL()
-		})
+		document.getElementById("favorite-regist").addEventListener("click", this.inputURL)
 		// 最新情報に更新
 		document.getElementById("favorite-update").addEventListener("click", async e => {
 			this.txtMiruLoading.begin()
 			try {
-				let url_list = []
+				const url_list = []
 				const tr_list = document.getElementById("novel_list_body").getElementsByTagName("TR")
 				for (const tr of tr_list) {
-					if (tr.className == "check_on") {
+					if (tr.className === "check_on") {
 						const url = tr.getAttribute("url")
 						if (url) {
 							url_list.push(url)
 						}
 					}
 				}
-				if (url_list.length == 0) {
+				if (url_list.length === 0) {
 					for (const tr of tr_list) {
 						if (tr.getAttribute("source")) {
 							continue
@@ -314,14 +216,14 @@ export class TxtMiruFavorite {
 				let results = []
 				for (const site of TxtMiruSiteManager.SiteList()) {
 					results = await site.GetInfo(txtMiru, url_list, item_list => {
-						let arr = ["取得中..."]
+						const arr = ["取得中..."]
 						for (const url of item_list) {
 							let exists = false
 							for (const tr of tr_list) {
 								if (tr.className === "loading") {
 									tr.className = "check_on"
 								}
-								if (url == tr.getAttribute("url")) {
+								if (url === tr.getAttribute("url")) {
 									tr.className = "loading"
 									arr.push(tr.getElementsByClassName("novel_title")[0].innerText)
 									exists = true
@@ -338,7 +240,7 @@ export class TxtMiruFavorite {
 						for (const tr of tr_list) {
 							const url = tr.getAttribute("url")
 							for (const item of results) {
-								if (item.url == url) {
+								if (item.url === url) {
 									await this.txtMiruDB.setFavorite(tr.getAttribute("item_id") | 0, item)
 								}
 							}
@@ -350,51 +252,39 @@ export class TxtMiruFavorite {
 			this.txtMiruLoading.end()
 			this.reload()
 		})
+		const loadNovel = id => {
+			for (const tr of document.getElementById("novel_list_body").getElementsByTagName("TR")) {
+				if (tr.className === "check_on") {
+					hideFavorite()
+					txtMiru.LoadNovel(tr.getAttribute(id))
+					return
+				}
+			}
+		}
 		// 最初から
-		document.getElementById("favorite-first").addEventListener("click", e => {
-			for (const tr of document.getElementById("novel_list_body").getElementsByTagName("TR")) {
-				if (tr.className == "check_on") {
-					this.favoriteElement.className = "hide-favorite"
-					txtMiru.display_popup = false
-					txtMiru.LoadNovel(tr.getAttribute("url"))
-					return
-				}
-			}
-		})
+		document.getElementById("favorite-first").addEventListener("click", e => { loadNovel("url") })
 		// 続きから
-		document.getElementById("favorite-continue").addEventListener("click", e => {
-			for (const tr of document.getElementById("novel_list_body").getElementsByTagName("TR")) {
-				if (tr.className == "check_on") {
-					this.favoriteElement.className = "hide-favorite"
-					txtMiru.display_popup = false
-					txtMiru.LoadNovel(tr.getAttribute("cur_url"))
-					return
-				}
-			}
-		})
+		document.getElementById("favorite-continue").addEventListener("click", e => { loadNovel("cur_url") })
 		// URL入力 画面内はクリックで閉じない
 		document.getElementById("input-favorite-box-inner").addEventListener("click", e => {
 			e.stopPropagation()
 		}, false)
 		// URL入力 画面外をクリックで閉じる
-		document.getElementById("input-favorite-box-outer").addEventListener("click", e => {
+		const hideInputUrl = _ => {
 			this.urlElement.className = "hide-input-url"
 			txtMiru.display_popup = false
-		})
-		document.getElementById("save-favorite-url-close").addEventListener("click", e => {
-			this.urlElement.className = "hide-input-url"
-			txtMiru.display_popup = false
-		})
+		}
+		document.getElementById("input-favorite-box-outer").addEventListener("click", hideInputUrl)
+		document.getElementById("save-favorite-url-close").addEventListener("click", hideInputUrl)
 		// 保存
 		document.getElementById("save-favorite-url").addEventListener("click", e => { this.addSite(txtMiru) })
 		document.getElementById("input-favorite-url").addEventListener("keydown", e => {
-			if (e.code == "Enter") {
+			if (e.code === "Enter") {
 				this.addSite(txtMiru)
 				e.preventDefault()
 				e.stopPropagation()
-			} else if (e.code == "Escape") {
-				this.urlElement.className = "hide-input-url"
-				txtMiru.display_popup = false
+			} else if (e.code === "Escape") {
+				hideInputUrl()
 				e.preventDefault()
 				e.stopPropagation()
 			}
@@ -403,18 +293,20 @@ export class TxtMiruFavorite {
 		document.getElementById("favorite-delete").addEventListener("click", e => {
 			let count = 0
 			for (const tr of document.getElementById("novel_list_body").getElementsByTagName("TR")) {
-				if (tr.className == "check_on") {
+				if (tr.className === "check_on") {
 					++count
 				}
 			}
 			if (count > 0) {
 				TxtMiruMessageBox.show("選択されているページをお気に入りから削除します。", { "buttons": [{ text: "削除", className: "seigaiha_blue", value: "delete" }, "削除しない"] }).then(async e => {
-					if (e == "delete") {
+					if (e === "delete") {
+						this.txtMiruLoading.begin()
 						for (const tr of document.getElementById("novel_list_body").getElementsByTagName("TR")) {
-							if (tr.className == "check_on") {
+							if (tr.className === "check_on") {
 								await this.txtMiruDB.deleteFavorite(tr.getAttribute("item_id") | 0)
 							}
 						}
+						this.txtMiruLoading.end()
 						this.reload()
 					}
 				})
@@ -426,9 +318,9 @@ export class TxtMiruFavorite {
 		// ソート
 		document.getElementById("novel_list_head").addEventListener("click", e => {
 			let target = null
-			if (e.target.tagName == "DIV") {
+			if (e.target.tagName === "DIV") {
 				target = e.target
-			} else if (e.target.tagName == "TD" || e.target.tagName == "TH") {
+			} else if (e.target.tagName === "TD" || e.target.tagName === "TH") {
 				target = e.target.children[0]
 			} else {
 				return false
@@ -440,44 +332,34 @@ export class TxtMiruFavorite {
 					txtMiru.setting["favorite-sort-column-order"] = target.getAttribute("name")
 				}
 				txtMiru.setting["favorite-sort-column"] = target.getAttribute("name")
-				txtMiru.saveSetting().then(ret => {
-					txtMiru.reflectSetting()
-				}).catch(ret => {
-				})
+				txtMiru.saveSetting().then(_ => txtMiru.reflectSetting).catch(_ => {})
 				this.dispList()
 			}
 			return false
 		})
-		// 列ダブルクリックで続きから
-		document.getElementById("novel_list_body").addEventListener("dblclick", e => {
-			let tr = null
-			if (e.target.tagName == "TD" || e.target.tagName == "TH") {
-				tr = e.target.parentElement
-			} else if (e.target.tagName == "TR") {
-				tr = e.target
+		const getTrElement = e => {
+			if (e.target.tagName === "TD" || e.target.tagName === "TH") {
+				return e.target.parentElement
+			} else if (e.target.tagName === "TR") {
+				return e.target
 			}
+			return null
+		}
+		// 行ダブルクリックで続きから
+		document.getElementById("novel_list_body").addEventListener("dblclick", e => {
+			const tr = getTrElement(e)
 			if (tr) {
-				this.favoriteElement.className = "hide-favorite"
-				txtMiru.display_popup = false
+				hideFavorite()
 				const url = tr.getAttribute("cur_url") || tr.getAttribute("url")
 				txtMiru.LoadNovel(url)
 				return false
 			}
 		})
-		// 列の選択
+		// 行の選択
 		document.getElementById("novel_list_body").addEventListener("click", e => {
-			let tr = null
-			if (e.target.tagName == "TD" || e.target.tagName == "TH") {
-				tr = e.target.parentElement
-			} else if (e.target.tagName == "TR") {
-				tr = e.target
-			}
+			const tr = getTrElement(e)
 			if (tr) {
-				if (tr.className == "check_on") {
-					tr.className = ""
-				} else {
-					tr.className = "check_on"
-				}
+				tr.className = tr.className === "check_on" ? "" : "check_on"
 			}
 			return false
 		})

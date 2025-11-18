@@ -1,11 +1,11 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.19.3'
-import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.19.3'
-import { TxtMiruLocalFile } from './TxtMiruLocalFile.js?1.0.19.3'
-import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.19.3'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.19.3'
-import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.19.3'
-import { TxtMiruDB } from './TxtMiruDB.js?1.0.19.3'
-import { TxtMiruLib } from './TxtMiruLib.js?1.0.19.3'
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.19.4'
+import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.19.4'
+import { TxtMiruLocalFile } from './TxtMiruLocalFile.js?1.0.19.4'
+import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.19.4'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.19.4'
+import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.19.4'
+import { TxtMiruDB } from './TxtMiruDB.js?1.0.19.4'
+import { TxtMiruLib } from './TxtMiruLib.js?1.0.19.4'
 
 const TxtMiruTitle = "TxtMiru on the Web"
 // DOM
@@ -180,7 +180,7 @@ export class TxtMiru {
 			if (!url || url.length === 0) {
 				return
 			}
-			let sock = new WebSocket(url)
+			const sock = new WebSocket(url)
 			sock.addEventListener("message", e => {
 				try {
 					let item = JSON.parse(e.data)

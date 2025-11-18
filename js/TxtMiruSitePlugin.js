@@ -1,16 +1,14 @@
-import { TxtMiruLib } from './TxtMiruLib.js?1.0.19.3'
+import { TxtMiruLib } from './TxtMiruLib.js?1.0.19.4'
 import fetchJsonp from './lib/fetch-jsonp.js'
-import { narou2html } from './lib/narou.js?1.0.19.3'
-import { AozoraText2Html } from './lib/aozora.js?1.0.19.3'
+import { narou2html } from './lib/narou.js?1.0.19.4'
+import { AozoraText2Html } from './lib/aozora.js?1.0.19.4'
 
 const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time))
 const appendSlash = text => text.match(/\/$/) ? text : text + "/"
 const removeSlash = text => text.replace(/\/$/, "")
 const removeNodes = remove_nodes => {
 	for (const e of remove_nodes) {
-		if (e && e.parentNode) {
-			e.parentNode.removeChild(e)
-		}
+		e?.parentNode?.removeChild(e)
 	}
 }
 const setItemEpisodeText = (id, href, text, item) => {
@@ -192,28 +190,18 @@ export class TxtMiruSiteManager {
 		})
 	}
 }
-
-const getFetchOption = txtMiru => {
-	const fetchOpt = {}
-	if (txtMiru.fetchAbortController){
-		fetchOpt.signal = txtMiru.fetchAbortController.signal
-	}
-	return fetchOpt
-}
-const checkFetchAbortError =  (err, url) => {
-	return (err.name === 'AbortError')
+const getFetchOption = txtMiru => txtMiru.fetchAbortController
+	? {signal: txtMiru.fetchAbortController.signal}
+	: {}
+const checkFetchAbortError = (err, url) => (err === "cancel" || err.name === 'AbortError')
 	? {html: `キャンセルされました<br><a href='${url}'>${url}</a>`, cancel: true}
 	: err
-}
-
 function string_to_buffer(src) {
 	return (new Uint8Array([].map.call(src, function (c) {
 		return c.charCodeAt(0)
 	}))).buffer;
 }
-const buffer_to_string = buf => {
-	return String.fromCharCode.apply("", new Uint8Array(buf))
-}
+const buffer_to_string = buf => String.fromCharCode.apply("", new Uint8Array(buf))
 const large_buffer_to_string = buf => {
 	const tmp = []
 	const len = 1024
@@ -672,14 +660,11 @@ TxtMiruSiteManager.AddSite(new Narou())
 
 class Kakuyomu extends TxtMiruSitePlugin {
 	Match = url => url.match(/https:\/\/kakuyomu\.jp/)
-	GetDocument = async (txtMiru, url) => {
-		return this._GetDocument(txtMiru, url).then(item => {
-			if(null !== item && item["html"].match(/An existing connection was forcibly closed by the remote host/)){
-				return this._GetDocument(txtMiru, url)
-			}
-			return item
-		})
-	}
+	GetDocument = async (txtMiru, url) => this._GetDocument(txtMiru, url)
+		.then(item => (null !== item && item["html"]?.match(/An existing connection was forcibly closed by the remote host/))
+			? this._GetDocument(txtMiru, url)
+			: item
+	)
 	_GetDocument = async (txtMiru, url) => {
 		const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
 			url: url,
@@ -765,10 +750,7 @@ class Kakuyomu extends TxtMiruSitePlugin {
 				item["html"] = title + doc.body.innerHTML
 				return item
 			})
-			.catch(err => {
-				console.log(err)
-				return checkFetchAbortError(err, url)
-			})
+			.catch(err => checkFetchAbortError(err, url))
 	}
 	GetToc = (index_url, doc) => {
 		const toc = {
@@ -1012,7 +994,7 @@ class Aozora extends TxtMiruSitePlugin {
 					item.author = e.nextElementSibling.innerText
 				}
 			}
-			item.max_page = doc.querySelectorAll('[class^="jisage"] has(.naka-midashi)').length
+			item.max_page = doc.querySelectorAll('[class^="jisage"]:has(.naka-midashi)').length
 			return item
 		}
 		return null
@@ -1020,10 +1002,9 @@ class Aozora extends TxtMiruSitePlugin {
 	GetPageNo = async (txtMiru, url) => {
 		if (this.Match(url)) {
 			let r
-			if (r = url.match(/^(.*\.html)\?([0-9]+)$/)) {
-				return { url: url, page_no: parseInt(r[2]), index_url: r[1] }
-			} 
-			return { url: url, page_no: 1, index_url: url }
+			return (r = url.match(/^(.*\.html)\?([0-9]+)$/))
+				? { url: url, page_no: parseInt(r[2]), index_url: r[1] }
+				: { url: url, page_no: 1, index_url: url }
 		}
 		return null
 	}

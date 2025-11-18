@@ -8,9 +8,7 @@ export class TxtMiruLoading {
 	}
 	cancel = _ => {
 		try {
-			if (this.txtMiru.fetchAbortController) {
-				this.txtMiru.fetchAbortController.abort("cancel")
-			}
+			this.txtMiru.fetchAbortController?.abort("cancel")
 		} catch{}
 	}
 	begin = messages => {

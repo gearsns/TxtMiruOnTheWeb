@@ -1,6 +1,6 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.19.3'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.19.3'
-import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.19.3"
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.19.4'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.19.4'
+import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.19.4"
 
 export class TxtMiruFavorite {
 	constructor(txtMiru) {
@@ -248,7 +248,9 @@ export class TxtMiruFavorite {
 						}
 					}
 				}
-			} catch{}
+			} catch(e){
+				console.log(e)
+			}
 			this.txtMiruLoading.end()
 			this.reload()
 		})

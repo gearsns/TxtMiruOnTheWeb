@@ -26,6 +26,9 @@ const setEvent = (urlElement, localFileElement, txtMiru) => {
 					cache[narouOrAozora] = true
 				}
 				url_list.push({ url: url, cache: cache, name: item.fullpath || item.webkitRelativePath || item.name })
+			} else if (item.name.match(/\.(?:jpg|jpeg|png|gif)$/i)) {
+				console.log(item.name)
+				txtMiru.addCache({ url: url, html: null, file: item })
 			}
 		}
 		if (url_list.length === 1) {
@@ -78,7 +81,7 @@ const setEvent = (urlElement, localFileElement, txtMiru) => {
 				}
 				return a0.length - b0.length
 			})
-			const arr = [`<h1 class='title'>${title}</h1>`,"<ul>"]
+			const arr = [`<h1 class='title'>${title}</h1>`,`<div class="index_box">`]
 			let preFolder = ""
 			for (const item of url_list) {
 				let name = item.name
@@ -90,19 +93,19 @@ const setEvent = (urlElement, localFileElement, txtMiru) => {
 							if (chapter_title.slice(0, topFolder.length) === topFolder){
 								chapter_title = chapter_title.slice(topFolder.length)
 							}
-							arr.push(`<li class="chapter_title">${chapter_title}</li>`)
+							arr.push(`<dl class="novel_sublist2"><dd class="subtitle">${chapter_title}</dd></dl>`)
 						}
 					}
 					preFolder = r[1]
 				}
-				arr.push(`<li><a href='${item.url.replace(/^txtmiru:\/\/localfile\//, '')}'>${name}</a></li>`)
+				arr.push(`<dl class="novel_sublist2"><dd class="subtitle"><a href='${item.url.replace(/^txtmiru:\/\/localfile\//, '')}'>${name}</a></dd></dl>`)
 				txtMiru.addCache(item.cache)
 			}
-			arr.push("</ul>")
+			arr.push("</div>")
 			cache.html = arr.join("")
 			cache.title = title
 			txtMiru.addCache(cache)
-			txtMiru.LoadNovel(url)
+			txtMiru.LoadNovel(index_url)
 			hideLocalFile()
 		} else {
 			document.getElementById("txtmiru-local-file-message").textContent = "対象ファイルが見つかりませんでした。"
@@ -135,9 +138,9 @@ const setEvent = (urlElement, localFileElement, txtMiru) => {
 					const directoryReader = entry.createReader()
 					const entries = await new Promise(resolve => {
 						directoryReader.readEntries(entries => resolve(entries))
-					});
-					for (let i = 0; i < entries.length; i++) {
-						await traverseFileTree(entries[i], _path + entry.name + "/")
+					})
+					for(const entry of entries){
+						await traverseFileTree(entry, _path + entry.name + "/")
 					}
 				}
 			}

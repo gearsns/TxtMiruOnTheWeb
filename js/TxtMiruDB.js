@@ -4,7 +4,7 @@ export class TxtMiruDB {
 	constructor(txtMiru) {
 		this.txtMiru = txtMiru
 	}
-	connect = async () => {
+	connect = async _ => {
 		this.db = new Dexie("TxtMiru")
 		this.db.version(1).stores({
 			Favorite: "++id,name,author,url,cur_url,cur_page,max_page",

@@ -70,49 +70,24 @@ const escape_mark = node => {
 		node.nodeValue = node.nodeValue.replace(/([\.・･]+)/ig,
 			(all, text) => {
 				if (text.length >= 2) {
-					let p = ""
 					if (text.length % 3 === 0) {
-						for (let l = text.length / 3; l > 0; --l) {
-							p += "…"
-						}
+						return "…".repeat(Math.floor(text.length / 3))
 					} else if (text.length % 2 === 0) {
-						for (let l = text.length / 2; l > 0; --l) {
-							p += "‥"
-						}
-					} else {
-						for (let l = text.length / 3; l > 0; --l) {
-							p += "…"
-						}
+						return "…".repeat(Math.floor(text.length / 2))
 					}
-					return p
+					return "…".repeat(Math.floor(text.length / 3))
 				}
 				return all
 			}
 		).replace(/[─━]/g, "―").replace(/\-+\-/g,
-			all => {
-				let p = ""
-				for (let l = all.length / 2; l > 0; --l) {
-					p += "―"
-				}
-				return p
-			}
+			all => "―".repeat(Math.floor(all.length / 2))
 		).replace(/[―ー–－−ｰ—\-][―ー–－−ｰ—\-]+/g,
 			all => {
-				let p = "―"
 				let l = 0
-				const all_list = all.split("");
-				for (const a_index in all_list) {
-					if (all_list[a_index].match(/−ｰ—\-/)) {
-						l += 1
-					} else {
-						l += 2
-					}
+				for (const text of all.split("")) {
+					l += (text.match(/−ｰ—\-/)) ? 1 : 2
 				}
-				l /= 2
-				for (; l > 0; --l) {
-					p += "―"
-				}
-				return p
+				return "―".repeat(Math.floor(l/2)+1)
 			}
 		).replace(/゛/g, "\u3099"
 		).replace(/／＼/g, "\u3033\u3035"
@@ -145,11 +120,7 @@ const tatechuuyoko_num = node => {
 			for (let i = 0; i < arr.length; ++i) {
 				if (skip_num > 0) {
 					--skip_num
-					if (arr[i] instanceof Array) {
-						item_list.push(document.createTextNode(arr[i].join("")))
-					} else {
-						item_list.push(document.createTextNode(arr[i]))
-					}
+					item_list.push(document.createTextNode(arr[i] instanceof Array ? arr[i].join("") : arr[i]))
 				} else if (arr[i] instanceof Array) {
 					// match text
 					const text = arr[i].join("")
@@ -205,7 +176,7 @@ const tatechuuyoko_symbol = node => {
 			|| !node.nodeValue.match(/([‼‼︎！？⁈⁇⁉\!\?]+)/)) {
 			return
 		}
-		let item_list = []
+		const item_list = []
 		let changed_tatechuyoko = false
 		const arr = split_str(node.nodeValue, /([‼‼︎！？⁈⁇⁉\!\?]+)/g)
 		if (arr.length >= 1) {
@@ -229,7 +200,7 @@ const tatechuuyoko_symbol = node => {
 					} else {
 						for (let j = 0; j < arr2.length; ++j) {
 							changed_tatechuyoko = true
-							let ltr_elm = document.createElement("span")
+							const ltr_elm = document.createElement("span")
 							ltr_elm.className = "tatechuyoko"
 							ltr_elm.appendChild(document.createTextNode(arr2[j]))
 							item_list.push(ltr_elm)
@@ -246,14 +217,11 @@ const tatechuuyoko_symbol = node => {
 				}
 			}
 		}
-		if (changed_tatechuyoko) {
-			if (item_list.length > 0) {
-				for (const new_node of item_list) {
-					node.parentNode.insertBefore(new_node, node)
-				}
-				node.parentNode.removeChild(node)
-				return
+		if (changed_tatechuyoko && item_list.length > 0) {
+			for (const new_node of item_list) {
+				node.parentNode.insertBefore(new_node, node)
 			}
+			node.parentNode.removeChild(node)
 		}
 		return
 	}
@@ -281,11 +249,11 @@ const yakumono_space = node => {
 		}
 		const arr = split_str(node.nodeValue, re_yakumono_space)
 		if (arr.length > 0) {
-			let item_list = []
-			for (let i = 0; i < arr.length; ++i) {
-				if (arr[i] instanceof Array) {
+			const item_list = []
+			for (const item of arr) {
+				if (item instanceof Array) {
 					// match text
-					const text = arr[i] + ""
+					const text = item + ""
 					if (text.length >= 2) {
 						const elm_yakumono = document.createElement("span")
 						elm_yakumono.className = "yakumono_spacing"
@@ -297,14 +265,13 @@ const yakumono_space = node => {
 					}
 				} else {
 					// #textnode
-					item_list.push(document.createTextNode(arr[i]))
+					item_list.push(document.createTextNode(item))
 				}
 			}
 			for (const new_node of item_list) {
 				node.parentNode.insertBefore(new_node, node)
 			}
 			node.parentNode.removeChild(node)
-			return
 		}
 		return
 	}
@@ -396,7 +363,7 @@ const convert_ruby = doc => {
 					}
 				}
 			}
-			let style_list = []
+			const style_list = []
 			for (const [key, value] of Object.entries(styles)) {
 				style_list.push(`${key}:${value}`)
 			}
@@ -451,7 +418,7 @@ const counterJapaneseHyphenation = doc => {
 			if (nextText.length > 0) {
 				span.appendChild(doc.createTextNode(nextText))
 			} else if (nextMoveNode) {
-				let nextNextMoveNode = nextMoveNode.nextSibling
+				const nextNextMoveNode = nextMoveNode.nextSibling
 				span.appendChild(nextMoveNode)
 				if (nextNextMoveNode) {
 					span.appendChild(nextNextMoveNode)
@@ -504,10 +471,10 @@ export class TxtMiruLib {
 	}
 	static LoadScript = src => {
 		return new Promise(function (resolve, reject) {
-			let script = document.createElement('script')
+			const script = document.createElement('script')
 			script.src = src
-			script.onload = () => resolve(script)
-			script.onerror = () => reject(new Error("Script load error: " + src))
+			script.onload = _ => resolve(script)
+			script.onerror = _ => reject(new Error("Script load error: " + src))
 			document.head.append(script)
 		})
 	}

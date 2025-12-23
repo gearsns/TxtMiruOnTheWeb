@@ -1,11 +1,12 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.19.4'
-import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.19.4'
-import { TxtMiruLocalFile } from './TxtMiruLocalFile.js?1.0.19.4'
-import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.19.4'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.19.4'
-import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.19.4'
-import { TxtMiruDB } from './TxtMiruDB.js?1.0.19.4'
-import { TxtMiruLib } from './TxtMiruLib.js?1.0.19.4'
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.19.5'
+import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.19.5'
+import { TxtMiruLocalFile } from './TxtMiruLocalFile.js?1.0.19.5'
+import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.19.5'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.19.5'
+import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.19.5'
+import { TxtMiruDB } from './TxtMiruDB.js?1.0.19.5'
+import { TxtMiruLib } from './TxtMiruLib.js?1.0.19.5'
+import { CacheFiles } from './TxtMiruCacheFiles.js?1.0.19.5'
 
 const TxtMiruTitle = "TxtMiru on the Web"
 // DOM
@@ -73,32 +74,11 @@ const retrieveCharactersRects = elem => {
 		}
 		range.detach()
 		return results
-	} else {
-		for (let i = 0, n = elem.childNodes.length; i < n; ++i) {
-			results.push(retrieveCharactersRects(elem.childNodes[i]))
-		}
-		return Array.prototype.concat.apply([], results)
 	}
-}
-
-// getCache : loalfile
-class CacheFiles {
-	#cache = []
-	Get = url => {
-		for(const item of this.#cache){
-			if(item.url === url){
-				return item
-			}
-		}
-		return null
+	for (let i = 0, n = elem.childNodes.length; i < n; ++i) {
+		results.push(retrieveCharactersRects(elem.childNodes[i]))
 	}
-	Set = item => {
-		if (this.#cache.length > 10) {
-			this.#cache.shift()
-		}
-		this.#cache.push(item)
-	}
-	SetHtml = (url, html) => this.Set({ url: url, html: html })
+	return Array.prototype.concat.apply([], results)
 }
 export class TxtMiru {
 	set_scroll_pos_state_timer_id = null
@@ -107,7 +87,7 @@ export class TxtMiru {
 	touchTimer = null
 	touchCount = 0
 	display_popup = false
-	cache_list = []
+	#localCacheList = new CacheFiles()
 	default_setting = {
 		"WebServerUrl": "https://script.google.com/macros/s/AKfycbxf6f5omc-p0kTdmyPh92wdpXv9vfQBqa9HJYtypTGD5N5Aqf5S5CWf-yQ6x6sIj4pf3g/exec",
 		"delay-set-scroll-pos-state": 10000,
@@ -116,7 +96,7 @@ export class TxtMiru {
 	}
 	setting = { ...this.default_setting }
 	fetchAbortController = null
-	cacheFiles = new CacheFiles()
+	cacheFiles = new CacheFiles(10)
 
 	constructor(main_id) {
 		this.mainElement = document.getElementById(main_id)
@@ -204,25 +184,13 @@ export class TxtMiru {
 		}
 	}
 	//
-	saveSetting = _ => {
-		const item_list = []
-		for (const key of Object.keys(this.setting)) {
-			item_list.push({ id: key, value: this.setting[key] })
-		}
-		return this.txtMiruDB.setSetting(item_list)
-	}
+	saveSetting = _ => this.txtMiruDB.setSetting(
+		Object.entries(this.setting).map(([id, value]) => ({ id, value }))
+  	)
 	//
-	clearCache = _ => this.cache_list.length = 0
-	getCache = _ => this.cache_list
-	addCache = item => {
-		for (let i = 0, l = this.cache_list.length; i < l; ++i) {
-			if (item.url && this.cache_list[i].url === item.url) {
-				this.cache_list[i] = item
-				return
-			}
-		}
-		this.cache_list.push(item)
-	}
+	clearCache = this.#localCacheList.Clear
+	getCache = this.#localCacheList.Get
+	addCache = this.#localCacheList.Set
 	///////////////////////////////
 	// ページ移動
 	// アニメーションでスクロール
@@ -295,7 +263,6 @@ export class TxtMiru {
 			el.scrollBy({ left: maxCount, behavior: "smooth" })
 		}
 	}
-
 	scrollToAnim = scroll_last => {
 		const el = this.mainElement
 		const height = scroll_last - el.scrollLeft
@@ -332,13 +299,8 @@ export class TxtMiru {
 	pageEnd = _ => this.mainElement.scrollTo({ left: -this.mainElement.scrollWidth, behavior: "smooth"})
 	//
 	gotoAttributeUrl = name => {
-		const el = this.contentsElement
-		if (el.hasAttribute(name)) {
-			const url = el.getAttribute(name)
-			if (url && url.length > 0) {
-				this.LoadNovel(url)
-			}
-		}
+		const url = this.contentsElement?.getAttribute(name)
+		url && this.LoadNovel(url)
 	}
 	gotoIndex = _ => this.gotoAttributeUrl("episode-index")
 	gotoNextEpisode = _ => this.gotoAttributeUrl("next-episode")
@@ -354,14 +316,9 @@ export class TxtMiru {
 	//
 	getHistory = curl_url => {
 		const history = this.setting["history"]
-		if (history){
-			for (const item of JSON.parse(history)) {
-				if (item.url === curl_url) {
-					return item
-				}
-			}
-		}
-		return {}
+		return (history)
+			? JSON.parse(history).find(item => item.url === curl_url) ?? {}
+			: {}
 	}
 	setHistory = (check_url, title) => {
 		if (!check_url) {
@@ -401,19 +358,19 @@ export class TxtMiru {
 	}
 	//
 	loadLocalFile = _ => {
-		(this.txtMiruLocalFile) || (this.txtMiruLocalFile = new TxtMiruLocalFile(this))
+		this.txtMiruLocalFile ??= new TxtMiruLocalFile(this)
 		this.txtMiruLocalFile.show()
 	}
 	inputURL = _ => {
-		(this.txtMiruInputURL) || (this.txtMiruInputURL = new TxtMiruInputURL(this))
+		this.txtMiruInputURL ??= new TxtMiruInputURL(this)
 		this.txtMiruInputURL.show()
 	}
 	showFavorite = _ => {
-		(this.txtMiruFavorite) || (this.txtMiruFavorite = new TxtMiruFavorite(this))
+		this.txtMiruFavorite ??= new TxtMiruFavorite(this)
 		this.txtMiruFavorite.show()
 	}
 	showConfig = _ => {
-		if(!this.txtMiruConfig) {this.txtMiruConfig = new TxtMiruConfig(this) }
+		this.txtMiruConfig ??= new TxtMiruConfig(this)
 		this.txtMiruConfig.show()
 	}
 	///////////////////////////////
@@ -445,8 +402,8 @@ export class TxtMiru {
 				if (e.ctrlKey) { code = `Ctrl+${code}` }
 				const func = this.key_mapping[code]
 				if (func) {
-					func(e)
 					TxtMiruLib.PreventEverything(e)
+					func(e)
 				}
 			}
 		})
@@ -502,7 +459,7 @@ export class TxtMiru {
 		}
 		const loadNovel = _ => {
 			const url = new URL(window.location)
-			const item = this.getHistory(url.searchParams.get('url'),)
+			const item = this.getHistory(url.searchParams.get('url'))
 			this.LoadNovel(url.searchParams.get('url'), item['scroll_pos'], true)
 		}
 		window.addEventListener("load", loadNovel)

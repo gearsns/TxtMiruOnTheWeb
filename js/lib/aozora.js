@@ -40,26 +40,22 @@ export const AozoraText2Html = (text, cur_command = "title") => {
 	}
 	// 青空文庫の追加
 	const addCommand = (commands, start, tag, start_text, content) => {
-		commands[start] = commands[start] || []
-		if (content) {
-			commands[start].push({ tag: tag, text: start_text, content: content })
-		} else {
-			commands[start].push({ tag: tag, text: start_text })
-		}
+		commands[start] ??= []
+		commands[start].push(content
+			? { tag: tag, text: start_text, content: content }
+			: { tag: tag, text: start_text })
 	}
 	const addCommands = (commands, start, end, tag, start_text, end_text) => {
-		commands[start] = commands[start] || []
+		commands[start] ??= []
 		commands[start].push({ tag: tag, text: start_text, length: end - start })
 		commands[end] = commands[end] || []
 		commands[end].splice(0, 0, { tag: `/${tag}`, text: end_text, length: start - end })
 	}
 	const addRubyCommands = (commands, start, end, start_text, end_text) => {
 		end_text = end_text.replace(/^《(.*?)》$/, "$1")
-		if (end_text.match(/［/)) {
-			end_text = AozoraText2Html(end_text, "contents").replace(/<br \/>$/, '') // ルビに内に青空文庫コマンドがあれば再帰で変換
-		} else {
-			end_text = escapeHtml(end_text)
-		}
+		end_text = (end_text.match(/［/))
+			? AozoraText2Html(end_text, "contents").replace(/<br \/>$/, '') // ルビに内に青空文庫コマンドがあれば再帰で変換
+			: escapeHtml(end_text)
 		addCommands(commands, start, end, "ruby", start_text, `<rt>${end_text}</rt>`)
 	}
 	// 全角の数字を半角に変換
@@ -209,15 +205,15 @@ export const AozoraText2Html = (text, cur_command = "title") => {
 				if (r = item.text.match(/［＃(.*)（(fig.+\.png)(、横([0-9]+)×縦([0-9]+))*）入る］/)) {
 					const alt = r[1]
 					const src = r[2]
-					addCommand(commands, frontText(line_item, i).length, "image", `src="${src}" class="illustration" alt="${item.row ? alt : escapeHtml(alt)}"`)
+					addCommand(commands, frontText(line_item, i).length, "image", `src="./${src}" class="illustration" alt="${item.row ? alt : escapeHtml(alt)}"`)
 				} else if(r = item.text.match(/［＃(.*)（(.+\.(?:png|jpeg|jpg))）入る］/)){
 					const alt = r[1]
 					const src = r[2]
-					addCommand(commands, frontText(line_item, i).length, "image", `src="${src}" class="illustration" alt="${item.row ? alt : escapeHtml(alt)}"`)
+					addCommand(commands, frontText(line_item, i).length, "image", `src="./${src}" class="illustration" alt="${item.row ? alt : escapeHtml(alt)}"`)
 				} else if(r = item.text.match(/［＃(.*)（(data:image\/.+)）入る］/)){
 					const alt = r[1]
 					const src = r[2]
-					addCommand(commands, frontText(line_item, i).length, "image", `src="${src}" class="illustration" alt="${item.row ? alt : escapeHtml(alt)}"`)
+					addCommand(commands, frontText(line_item, i).length, "image", `src="./${src}" class="illustration" alt="${item.row ? alt : escapeHtml(alt)}"`)
 				} else if (r = item.text.match(/［＃ここから(?:(.*)字下げ|(改行天付き))、折り返して(.*)字下げ］/)) {
 					let number_1 = r[1] || r[2]
 					let number_2 = r[3]
@@ -275,11 +271,9 @@ export const AozoraText2Html = (text, cur_command = "title") => {
 					jisage_open = false
 					const command = r[1]
 					const cinfo = command_list[command]
-					if (cinfo) {
-						addCommand(commands, frontText(line_item, i).length, `/${cinfo.block_tag || cinfo.tag}`, "")
-					} else {
-						addCommand(commands, frontText(line_item, i).length, `/div`, "")
-					}
+					addCommand(commands, frontText(line_item, i).length
+						, cinfo ? `/${cinfo.block_tag || cinfo.tag}` : `/div`
+						, "")
 				} else if (item.text.match(/［＃ここで/)) {
 					addCommand(commands, frontText(line_item, i).length, `/div`, "")
 				} else if (r = item.text.match(/「(.*)」(の左)*(?:の|に|は)「ママ」の注記］/)) {
@@ -368,7 +362,7 @@ export const AozoraText2Html = (text, cur_command = "title") => {
 					addRubyCommands(commands, start, pre_ruby_end_index, "", item.text)
 				} else {
 					const ft = frontText(line_item, i)
-					if (r = ft.match(re_ruby_pattern)) {
+					if (r = ft.match(re_ruby_pattern) && r?.length >= 2) {
 						const start = Math.max(r[1].length, pre_ruby_end_index)
 						pre_ruby_end_index = r[1].length + r[2].length
 						addRubyCommands(commands, start, pre_ruby_end_index, "", item.text)
@@ -388,10 +382,9 @@ export const AozoraText2Html = (text, cur_command = "title") => {
 					const a_t = tagOrder(a.tag)
 					const b_t = tagOrder(b.tag)
 					let r = a_t - b_t
-					if (r === 0) {
-						r = (b.length || (max_len * b_t)) - (a.length || (max_len * a_t))
-					}
-					return r
+					return (r === 0)
+						? (b.length || (max_len * b_t)) - (a.length || (max_len * a_t))
+						: r
 				})
 				for (const command of commands[index]) {
 					if (command.tag === "UNICODE CHAR") {

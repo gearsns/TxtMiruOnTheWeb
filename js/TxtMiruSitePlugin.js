@@ -1,9 +1,10 @@
-import { TxtMiruLib } from './TxtMiruLib.js?1.0.19.4'
+import { TxtMiruLib } from './TxtMiruLib.js?1.0.19.5'
 import fetchJsonp from './lib/fetch-jsonp.js'
-import { narou2html } from './lib/narou.js?1.0.19.4'
-import { AozoraText2Html } from './lib/aozora.js?1.0.19.4'
+import { narou2html } from './lib/narou.js?1.0.19.5'
+import { AozoraText2Html } from './lib/aozora.js?1.0.19.5'
+import { CacheFiles } from './TxtMiruCacheFiles.js?1.0.19.5'
 
-const sleep = (time) => new Promise((resolve) => setTimeout(resolve, time))
+const sleep = time => new Promise(resolve => setTimeout(resolve, time))
 const appendSlash = text => text.match(/\/$/) ? text : text + "/"
 const removeSlash = text => text.replace(/\/$/, "")
 const removeNodes = remove_nodes => {
@@ -170,9 +171,56 @@ const getHtmlDocument = async url => {
 class TxtMiruSitePlugin {
 	Match = url => false
 	GetDocument = (txtMiru, url) => null
-	GetInfo = (txtMiru, url, callback = null) => false // お気に入りで使用
+	GetInfo = async (txtMiru, url, callback = null) => false // お気に入りで使用
 	GetPageNo = (txtMiru, url) => { } // お気に入りで使用
 	Name = _ => ""
+	GetArrayInfo = async (txtMiru, url, callback = null) => {
+		const results = []
+		for (const u of url) {
+			if (this.Match(u)) {
+				const item = await this.GetInfo(txtMiru, u, callback)
+				if (item !== null) {
+					results.push(item)
+				}
+			}
+		}
+		return results
+	}
+	TryFetch = async (txtMiru, url, url_params, callback) => {
+		url_params["url"] ??= url
+		const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams(url_params)}`
+		let item = null
+		const fetchOpt = getFetchOption(txtMiru)
+		for(let i=1; i<=5; ++i){
+			try {
+				item = await callback(fetchOpt, req_url)
+			} catch(e){
+				console.log(e)
+			}
+			if (item instanceof Error){
+				item = checkFetchAbortError(item, url)
+				if (item instanceof Error){
+					console.log(item)
+				} else {
+					break
+				}
+			} else {
+				break
+			}
+			for(let j=0; j<(i+1)*3; j++){
+				console.log(`retry:${i} x [${j+1}/${(i+1)*3}]`)
+				txtMiru.txtMiruLoading.update(`待機中 ${i}回目 [${(i+1)*3-j}]`)
+				await sleep(1000)
+				if (txtMiru.fetchAbortController && txtMiru.fetchAbortController.signal.aborted){
+					return {html: `キャンセルされました<br><a href='${url}'>${url}</a>`, cancel: true}
+				}
+			}
+			txtMiru.txtMiruLoading.update(`取得中...`)
+		}
+		return (item instanceof Error)
+			? {html: `キャンセルされました<br><a href='${url}'>${url}</a>`, cancel: true}
+			: item
+	}
 }
 
 export class TxtMiruSiteManager {
@@ -211,11 +259,11 @@ const large_buffer_to_string = buf => {
 	return tmp.join("")
 }
 const messageFileCannotRead = "ファイルを読み込めませんでした。"
-let loadedEncoding = undefined
+let loadedEncoding = null
 const arrayBufferToUnicodeString = async arraybuffer => {
 	if (loadedEncoding === false) {
 		return messageFileCannotRead
-	} else if (loadedEncoding === undefined) {
+	} else if (loadedEncoding === null) {
 		try {
 			await TxtMiruLib.LoadScript("js/lib/encoding.min.js")
 			loadedEncoding = true
@@ -227,11 +275,11 @@ const arrayBufferToUnicodeString = async arraybuffer => {
 	const array = new Uint8Array(arraybuffer)
 	return Encoding.codeToString(Encoding.convert(array, "UNICODE"))
 }
-let loadedJSZip = undefined
+let loadedJSZip = null
 const arrayBufferUnZip = async arraybuffer => {
 	if (loadedJSZip === false) {
 		return messageFileCannotRead
-	} else if (loadedJSZip === undefined) {
+	} else if (loadedJSZip === null) {
 		try {
 			await TxtMiruLib.LoadScript("js/lib/jszip.min.js")
 			loadedJSZip = true
@@ -242,9 +290,9 @@ const arrayBufferUnZip = async arraybuffer => {
 	}
 	await arrayBufferToUnicodeString([])
 	const new_zip = new JSZip()
-	return await new_zip.loadAsync(arraybuffer, { decodeFileName: fileNameBinary => Encoding.codeToString(Encoding.convert(fileNameBinary, "UNICODE")) }).then(async zip => {
+	return await new_zip.loadAsync(arraybuffer, { decodeFileName: fileNameBinary => Encoding.codeToString(Encoding.convert(fileNameBinary, "UNICODE")) }).then(zip => {
 		const ret = []
-		zip.forEach(async (relativePath, zipEntry) => {
+		zip.forEach((relativePath, zipEntry) => {
 			ret.push(zipEntry)
 		})
 		return ret
@@ -294,11 +342,9 @@ const epubIndex = async (txtMiru, index_url, cache) => {
 								const id = itemref.getAttribute("idref")
 								const e = opf_xml.getElementById(id)
 								if (e) {
-									toc_array.push(
-										{
-											href: e.getAttribute("href")
-										}
-									)
+									toc_array.push({
+										href: e.getAttribute("href")
+									})
 								}
 							}
 							cache.toc = toc_array
@@ -336,12 +382,10 @@ class TxtMiruCacheSite extends TxtMiruSitePlugin {
 			return html
 		}
 		const index_url = this.IndexUrl(url)
-		for (const cache of txtMiru.getCache()) {
-			if (cache.url !== index_url) {
-				continue
-			}
+		const cache = txtMiru.getCache(index_url)
+		if (cache) {
 			if (!cache.html && cache.zipEntry) {
-				cache.html = arrayBufferToHtml(await cache.zipEntry.async("arraybuffer"), cache)
+				cache.html = await arrayBufferToHtml(await cache.zipEntry.async("arraybuffer"), cache)
 			} else if (!cache.html && cache.file) {
 				// ローカルファイルの読み込み
 				await new Promise((resolve, reject) => {
@@ -351,19 +395,29 @@ class TxtMiruCacheSite extends TxtMiruSitePlugin {
 							if (cache.url.match(/\.epub$/)) {
 								//epubIndex(txtMiru, index_url, cache)
 							}
+							const target_cache = []
 							// Create Index
-							const arr = [`<h1 class="title">${cache.name}</h1>`,"<ul>"]
+							const arr = [`<h1 class="title">${cache.file?.name}</h1>`,`<div class="index_box">`]
 							for (const item of await arrayBufferUnZip(reader.result)) {
-								arr.push(`<li><a href='${index_url.replace(/^.*\//i, "./")}/${item.name}'>${item.name}</a></li>`)
+								arr.push(`<dl class="novel_sublist2"><dd class="subtitle"><a href='${index_url.replace(/^.*\//i, "./")}/${item.name}'>${item.name}</a></dd></dl>`)
 								const item_cache = { url: `${index_url}/${item.name}`, html: null, zipEntry: item }
 								if (item.name.match(/\.(?:txt)$/i)) {
 									item_cache.narou = cache.narou
 									item_cache.aozora = cache.aozora
+									target_cache.push(item_cache)
 								}
 								txtMiru.addCache(item_cache)
 							}
-							arr.push("</ul>")
-							resolve(arr.join(""))
+							arr.push("</div>")
+							if (target_cache.length === 1){
+								console.log(target_cache[0])
+								url = target_cache[0].url
+								target_cache[0].html = await arrayBufferToHtml(await target_cache[0].zipEntry.async("arraybuffer"), target_cache[0])
+								txtMiru.addCache(target_cache[0])
+								resolve(target_cache[0].html)
+							} else {
+								resolve(arr.join(""))
+							}
 						} else {
 							resolve(arrayBufferToHtml(reader.result, cache))
 						}
@@ -373,23 +427,23 @@ class TxtMiruCacheSite extends TxtMiruSitePlugin {
 					cache.html = html
 				})
 			}
-			const [item, doc] = parseHtml(url, index_url, `<div class="main_text">${cache.html}</div>`, "TxtMiruCache Aozora")
+			const [item, doc] = parseHtml(url, this.IndexUrl(url)/*urlが変更されているかもなのでIndelUrl再取得*/, `<div class="main_text">${cache.html}</div>`, "TxtMiruCache Aozora")
 			let html = doc.body.innerHTML
 			if (html.match(/img/i)) {
 				// イメージファイルは、blobで読んでおく
 				for (const el of doc.getElementsByTagName("IMG")) {
-					const src = el.getAttribute("src")
-					for (const cache_img of txtMiru.getCache()) {
-						if (cache_img.url === src) {
-							try {
-								if (cache_img.zipEntry) {
-									el.src = window.btoa(String.fromCharCode.apply(null, new Uint16Array(await cache_img.zipEntry.async("arraybuffer"))))
-								} else if (cache_img.file) {
-									el.src = await this.loadImg(cache_img.file)
-								}
-							} catch {}
-							break
+					const cache_img = txtMiru.getCache( el.getAttribute("src"))
+					if (cache_img) {
+						try {
+							if (cache_img.zipEntry) {
+								el.src = URL.createObjectURL(await cache_img.zipEntry.async("blob"))
+							} else if (cache_img.file) {
+								el.src = await this.loadImg(cache_img.file)
+							}
+						} catch(error) {
+							console.log(error)
 						}
+						break
 					}
 				}
 				html = doc.body.innerHTML
@@ -436,32 +490,16 @@ class TxtMiruWebCacheSite extends TxtMiruSitePlugin {
 		item["html"] = doc.body.innerHTML
 		return item
 	}
-	GetDocument = async (txtMiru, url) => {
-		const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
-			url: url,
+	GetDocument = async (txtMiru, url) =>
+		this.TryFetch(txtMiru, url, {
 			charset: "UTF-8"
-		})}`
-		let item = null
-		const fetchOpt = getFetchOption(txtMiru)
-		try {
-			item = await fetch(req_url, fetchOpt)
+		},
+		async (fetchOpt, req_url) => 
+			fetch(req_url, fetchOpt)
 			.then(response => response.text())
 			.then(text => this.makeItem(url, text))
-			.catch(err => {
-				if (err.name === 'AbortError') {
-					throw err
-				}
-				console.log(err)
-				return err
-			})
-		} catch(e){
-			if (e.name === 'AbortError') {
-				item = {html: `キャンセルされました<br><a href='${url}'>${url}</a>`, cancel: true}
-			}
-			console.log(e)
-		}
-		return item
-	}
+			.catch(err => checkFetchAbortError(err, url))
+		)
 	GetInfo = (txtMiru, url, callback = null) => false
 	GetPageNo = (txtMiru, url) => { }
 	Name = _ => "TxtMiruWeb"
@@ -514,48 +552,17 @@ class Narou extends TxtMiruSitePlugin {
 		item["html"] = doc.body.innerHTML
 		return item
 	}
-	GetDocument = async (txtMiru, url) => {
-		const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
-			url: url,
+	GetDocument = async (txtMiru, url) => 
+		this.TryFetch(txtMiru, url, {
 			charset: "UTF-8",
 			cookie: (txtMiru.setting["over18"] === "yes") ? "over18=yes" : ""
-		})}`
-		let item = null
-		const fetchOpt = getFetchOption(txtMiru)
-		for(let i=1; i<=5; ++i){
-			try {
-				item = await fetch(req_url, fetchOpt)
+		},
+		async (fetchOpt, req_url) =>
+			fetch(req_url, fetchOpt)
 				.then(response => response.text())
 				.then(text => this.makeItem(url, text))
 				.catch(err => checkFetchAbortError(err, url))
-			} catch(e){
-				console.log(e)
-			}
-			if (item instanceof Error){
-				item = checkFetchAbortError(item, url)
-				if (item instanceof Error){
-
-				} else {
-					break
-				}
-			} else {
-				break
-			}
-			for(let j=0; j<(i+1)*3; j++){
-				console.log(`retry:${i} x [${j+1}/${(i+1)*3}]`)
-				txtMiru.txtMiruLoading.update(`待機中 ${i}回目 [${(i+1)*3-j}]`)
-				await sleep(1000)
-				if (txtMiru.fetchAbortController && txtMiru.fetchAbortController.signal.aborted){
-					return {html: `キャンセルされました<br><a href='${url}'>${url}</a>`, cancel: true}
-				}
-			}
-			txtMiru.txtMiruLoading.update(`取得中...`)
-		}
-		if (item instanceof Error){
-			return {html: `キャンセルされました<br><a href='${url}'>${url}</a>`, cancel: true}
-		}
-		return item
-	}
+		)
 	#getNcode = url => {
 		const m = url.match(/https:\/\/.*\.syosetu\.com\/n([A-Za-z0-9]+)/)
 		return (m ? `N${m[1]}` : url).toUpperCase()
@@ -585,7 +592,7 @@ class Narou extends TxtMiruSitePlugin {
 					if (item.ncode) {
 						results.push({
 							url: item.ncode.toUpperCase(),
-							max_page: item.novel_type == 2/*短編*/ ? -1 : item.general_all_no,
+							max_page: item.novel_type === 2/*短編*/ ? -1 : item.general_all_no,
 							name: item.title,
 							author: item.writer
 						})
@@ -607,18 +614,16 @@ class Narou extends TxtMiruSitePlugin {
 				await addItem()
 			}
 			const out_results = []
+			const resultMap = new Map(results.map(r => [r.url, r]))
 			for (const u of url) {
-				const ncode = this.#getNcode(u)
-				for (const ret of results) {
-					if (ret.url === ncode) {
-						out_results.push({
-							url: appendSlash(u),
-							max_page: ret.max_page,
-							name: ret.name,
-							author: ret.author
-						})
-						break
-					}
+				const item = resultMap.get(this.#getNcode(u))
+				if (item){
+					out_results.push({
+						url: appendSlash(u),
+						max_page: item.max_page,
+						name: item.name,
+						author: item.author
+					})
 				}
 			}
 			return out_results
@@ -665,93 +670,88 @@ class Kakuyomu extends TxtMiruSitePlugin {
 			? this._GetDocument(txtMiru, url)
 			: item
 	)
-	_GetDocument = async (txtMiru, url) => {
-		const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
-			url: url,
+	_GetDocument = async (txtMiru, url) => 
+		this.TryFetch(txtMiru, url, {
 			charset: "UTF-8"
-		})}`
-		const fetchOpt = getFetchOption(txtMiru)
-		return fetch(req_url, fetchOpt)
-			.then(response => response.text())
-			.then(text => {
-				const doc = TxtMiruLib.HTML2Document(text)
-				const item = {
-					className: "Kakuyomu",
-					"title": doc.title,
-					"next-episode-text": "次へ",
-					"prev-episode-text": "前へ",
-					"episode-index-text": "カクヨム",
-					"episode-index": "https://kakuyomu.jp/"
-				}
-				let toc = {}
-				if (text.match(/__NEXT_DATA__/)){
-					const parser = new DOMParser()
-					const tocDodc = parser.parseFromString(text, "text/html")
-					toc = this.GetToc(url, tocDodc)
-				}
-				if (toc.subtitles && toc.subtitles.length > 0 && url.match(/works\/[0-9]+$/)) {
-					// Indexページが最初の数件しか目次を表示しないのでページ再生成
-					const arrHtml = []
-					arrHtml.push(`<h1 class='title'>${TxtMiruLib.EscapeHtml(toc.title)}</h1>`)
-					arrHtml.push(`<h2 class='author'>${TxtMiruLib.EscapeHtml(toc.author)}</h2>`)
-					arrHtml.push(`<div><p>${TxtMiruLib.EscapeHtml(toc.story).replace(/\n/g, "<br>")}</p></div>`)
-					arrHtml.push(`<ul class="subtitles">`)
-  					let preChpter = ""
-					for(const item of toc.subtitles)
-					{
-						if (item.chapter && preChpter !== item.chapter)
+		},
+		async (fetchOpt, req_url) =>
+			fetch(req_url, fetchOpt)
+				.then(response => response.text())
+				.then(text => {
+					const doc = TxtMiruLib.HTML2Document(text)
+					const item = {
+						className: "Kakuyomu",
+						"title": doc.title,
+						"next-episode-text": "次へ",
+						"prev-episode-text": "前へ",
+						"episode-index-text": "カクヨム",
+						"episode-index": "https://kakuyomu.jp/"
+					}
+					let toc = {}
+					if (text.match(/__NEXT_DATA__/)){
+						const parser = new DOMParser()
+						const tocDodc = parser.parseFromString(text, "text/html")
+						toc = this.GetToc(url, tocDodc)
+					}
+					if (toc.subtitles && toc.subtitles.length > 0 && url.match(/works\/[0-9]+$/)) {
+						// Indexページが最初の数件しか目次を表示しないのでページ再生成
+						const arrHtml = []
+						arrHtml.push(`<h1 class='title'>${TxtMiruLib.EscapeHtml(toc.title)}</h1>`)
+						arrHtml.push(`<h2 class='author'>${TxtMiruLib.EscapeHtml(toc.author)}</h2>`)
+						arrHtml.push(`<div><p>${TxtMiruLib.EscapeHtml(toc.story).replace(/\n/g, "<br>")}</p></div>`)
+						arrHtml.push(`<ul class="subtitles">`)
+						let preChpter = ""
+						for(const item of toc.subtitles)
 						{
-							arrHtml.push(`<li class="chapter">${TxtMiruLib.EscapeHtml(item.chapter)}</li>`)
+							if (item.chapter && preChpter !== item.chapter)
+							{
+								arrHtml.push(`<li class="chapter">${TxtMiruLib.EscapeHtml(item.chapter)}</li>`)
+							}
+							preChpter = item.chapter
+							const d = new Date(item.subupdate||item.subdate||"")
+							const strDate = d.getFullYear()
+								? `<span class="sideways_date">${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日</span>`
+								: ""
+							arrHtml.push(`<li><a href="${item.href}">${TxtMiruLib.EscapeHtml(item.subtitle||"")}</a><span class='long_update'>${strDate}</span></li>`)
 						}
-						preChpter = item.chapter
-						arrHtml.push(`<li><a href="${item.href}">${TxtMiruLib.EscapeHtml(item.subtitle||"")}</a><span class='long_update'>${TxtMiruLib.EscapeHtml(item.subupdate||item.subdate||"")}</span></li>`)
+						arrHtml.push(`</ul>`)
+						arrHtml.push(`<div>`)
+						arrHtml.push(`<a class='txtmiru_pager' id='TxtMiruNextPage' href='${toc.subtitles[0].href}'>次へ （${TxtMiruLib.EscapeHtml(toc.subtitles[0].subtitle.trim())}）</a>`)
+						arrHtml.push("</div>")
+						doc.body.innerHTML = arrHtml.join("")
 					}
-					arrHtml.push(`</ul>`)
-					arrHtml.push(`<div>`)
-					arrHtml.push(`<a class='txtmiru_pager' id='TxtMiruNextPage' href='${toc.subtitles[0].href}'>次へ （${TxtMiruLib.EscapeHtml(toc.subtitles[0].subtitle.trim())}）</a>`)
-					arrHtml.push("</div>")
-					doc.body.innerHTML = arrHtml.join("")
-				}
-				TxtMiruLib.KumihanMod(url, doc)
-				const remove_nodes = []
-				for(const el of doc.querySelectorAll("h2,h3")){
-					if (el.textContent.match(/^(新着おすすめレビュー|おすすめレビュー|関連小説)$/)){
-						remove_nodes.push(el.parentNode)
+					TxtMiruLib.KumihanMod(url, doc)
+					const remove_nodes = []
+					for(const el of doc.querySelectorAll("h2,h3")){
+						if (el.textContent.match(/^(新着おすすめレビュー|おすすめレビュー|関連小説)$/)){
+							remove_nodes.push(el.parentNode)
+						}
 					}
-				}
-				removeNodes(remove_nodes)
-				const forcePager = checkForcePager(doc, item)
-				for (const el_span of doc.querySelectorAll(".widget-toc-episode-datePublished > span")) {
-					const m = el_span.innerText.match(/([0-9]+)年([0-9]+)月([0-9]+)日/)
-					if (m && m.length > 0) {
-						el_span.innerText = `${m[1]}年${("0" + m[2]).slice(-2)}月${("0" + m[3]).slice(-2)}日`.replace(/[0-9]/g, s => {
-							return String.fromCharCode(s.charCodeAt(0) + 0xFEE0)
-						})
+					removeNodes(remove_nodes)
+					const forcePager = checkForcePager(doc, item)
+					let title = ""
+					for (const el_a of doc.getElementsByTagName("A")) {
+						const href = el_a.getAttribute("href") || ""
+						if (!href.match(/^http/)) {
+							el_a.href = TxtMiruLib.ConvertAbsoluteURL(url, href) //`https://kakuyomu.jp${href}`
+						}
+						if (el_a.getAttribute("data-link-click-action-name") === "WorksEpisodesEpisodeHeaderPreviousEpisode") {
+							forcePager.setPrevEpisode(el_a, item)
+							el_a.style.display = "none"
+						} else if (el_a.getAttribute("data-link-click-action-name") === "WorksEpisodesEpisodeFooterNextEpisode") {
+							forcePager.setNextEpisode(el_a, item)
+							el_a.style.display = "none"
+						} else if (el_a.getAttribute("itemprop") === "item") {
+							forcePager.setEpisodeIndex(el_a, item)
+							title = `<a class="kakuyomu_title" href="${el_a.href}">${el_a.getAttribute("title")}</a>`
+							el_a.style.display = "none"
+						}
 					}
-				}
-				let title = ""
-				for (const el_a of doc.getElementsByTagName("A")) {
-					const href = el_a.getAttribute("href") || ""
-					if (!href.match(/^http/)) {
-						el_a.href = TxtMiruLib.ConvertAbsoluteURL(url, href) //`https://kakuyomu.jp${href}`
-					}
-					if (el_a.getAttribute("data-link-click-action-name") === "WorksEpisodesEpisodeHeaderPreviousEpisode") {
-						forcePager.setPrevEpisode(el_a, item)
-						el_a.style.display = "none"
-					} else if (el_a.getAttribute("data-link-click-action-name") === "WorksEpisodesEpisodeFooterNextEpisode") {
-						forcePager.setNextEpisode(el_a, item)
-						el_a.style.display = "none"
-					} else if (el_a.getAttribute("itemprop") === "item") {
-						forcePager.setEpisodeIndex(el_a, item)
-						title = `<a class="kakuyomu_title" href="${el_a.href}">${el_a.getAttribute("title")}</a>`
-						el_a.style.display = "none"
-					}
-				}
-				item["html"] = title + doc.body.innerHTML
-				return item
-			})
-			.catch(err => checkFetchAbortError(err, url))
-	}
+					item["html"] = title + doc.body.innerHTML
+					return item
+				})
+				.catch(err => checkFetchAbortError(err, url))
+		)
 	GetToc = (index_url, doc) => {
 		const toc = {
 			title: "",
@@ -782,21 +782,17 @@ class Kakuyomu extends TxtMiruSitePlugin {
 					chapter = apollo_state[subTableOfContents["chapter"]["__ref"]]["title"]
 				}
 				const episodes = subTableOfContents["episodeUnions"]
-				if (episodes) {
-					for(const item of episodes){
-						++index;
-						const episode = apollo_state[item["__ref"]]
-						toc.subtitles.push(
-							{
-								subtitle: episode["title"],
-								href: `/works/${base_name}/episodes/${episode["id"]}`,
-								index: index,
-								subdate: episode["publishedAt"],
-								subupdate: "",
-								chapter: chapter,
-							}
-						)
-					}
+				for(const item of (episodes||[])){
+					++index;
+					const episode = apollo_state[item["__ref"]]
+					toc.subtitles.push({
+						subtitle: episode["title"],
+						href: `/works/${base_name}/episodes/${episode["id"]}`,
+						index: index,
+						subdate: episode["publishedAt"],
+						subupdate: "",
+						chapter: chapter,
+					})
 				}
 			}
 		} catch(e) {
@@ -806,28 +802,17 @@ class Kakuyomu extends TxtMiruSitePlugin {
 	}
 	GetInfo = async (txtMiru, url, callback = null) => {
 		if (Array.isArray(url)) {
-			const results = []
-			for (const u of url) {
-				if (this.Match(u)) {
-					const item = await this.GetInfo(txtMiru, u, callback)
-					if (item !== null) {
-						results.push(item)
-					}
-				}
-			}
-			return results
+			return await this.GetArrayInfo(txtMiru, url, callback)
 		} else if (this.Match(url)) {
 			if (callback) {
 				callback([url])
 			}
-			let index_url = ""
 			url = appendSlash(url)
 			const m = url.match(/(https:\/\/kakuyomu\.jp\/works\/.*?)\//)
-			if (m && m.length > 0) {
-				index_url = m[1]
-			} else {
+			if (!m) {
 				return null
 			}
+			const index_url = m[1]
 			const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
 				url: `${index_url}`,
 				charset: "UTF-8"
@@ -840,9 +825,7 @@ class Kakuyomu extends TxtMiruSitePlugin {
 				max_page = doc.getElementsByClassName("widget-toc-episode-titleLabel").length
 				title = doc.getElementById("workTitle").innerText
 				author = doc.getElementById("workAuthor-activityName").innerText
-			} catch (e) {
-
-			}
+			} catch (e) {}
 			const toc = this.GetToc(index_url, doc)
 			author = toc.author || author
 			title = toc.title || title
@@ -887,22 +870,8 @@ class Kakuyomu extends TxtMiruSitePlugin {
 TxtMiruSiteManager.AddSite(new Kakuyomu())
 
 class Aozora extends TxtMiruSitePlugin {
-	cache = []
+	#cache = new CacheFiles(5)
 	IndexUrl = url => url.replace(/\.html\?[0-9]+$/, ".html")
-	GetCacheHtml = url => {
-		for (const item of this.cache) {
-			if (item.url === url) {
-				return item.html
-			}
-		}
-		return null
-	}
-	SetCacheHtml = (url, html) => {
-		if (this.cache.length > 5) {
-			this.cache.shift()
-		}
-		this.cache.push({ url: url, html: html })
-	}
 	Match = url => url.match(/https*:\/\/www\.aozora\.gr\.jp/)
 	ParseHtml = (url, index_url, html) => {
 		html = html
@@ -925,37 +894,27 @@ class Aozora extends TxtMiruSitePlugin {
 	}
 	GetDocument = async (txtMiru, url) => {
 		const index_url = this.IndexUrl(url)
-		const html = this.GetCacheHtml(index_url)
-		if (html) {
-			return new Promise(resolve => {
+		const html = this.#cache.Get(index_url)?.html
+		return html
+			? new Promise(resolve => {
 				setTimeout(() => resolve(this.ParseHtml(url, index_url, html)))
 			})
-		}
-		const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
-			url: url,
-			charset: "Auto"
-		})}`
-		const fetchOpt = getFetchOption(txtMiru)
-		return fetch(req_url, fetchOpt)
-			.then(response => response.text())
-			.then(text => {
-				this.SetCacheHtml(index_url, text)
-				return this.ParseHtml(url, index_url, text)
-			})
-			.catch(err => checkFetchAbortError(err, url))
+			: this.TryFetch(txtMiru, url, {
+					charset: "Auto"
+				},
+				async (fetchOpt, req_url) =>
+					fetch(req_url, fetchOpt)
+					.then(response => response.text())
+					.then(text => {
+						this.#cache.Set({ url: index_url, html: text })
+						return this.ParseHtml(url, index_url, text)
+					})
+					.catch(err => checkFetchAbortError(err, url))
+				)
 	}
 	GetInfo = async (txtMiru, url, callback = null) => {
 		if (Array.isArray(url)) {
-			const results = []
-			for (const u of url) {
-				if (this.Match(u)) {
-					const item = await this.GetInfo(txtMiru, u, callback)
-					if (item !== null) {
-						results.push(item)
-					}
-				}
-			}
-			return results
+			return await this.GetArrayInfo(txtMiru, url, callback)
 		} else if (this.Match(url)) {
 			if (callback) {
 				callback([url])
@@ -1057,72 +1016,30 @@ class Alphapolis extends TxtMiruSitePlugin {
 		item["html"] = doc.body.innerHTML
 		return item
 	}
-	GetDocument = async (txtMiru, url) => {
-		const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
-			url: url,
+	GetDocument = async (txtMiru, url) => 
+		this.TryFetch(txtMiru, url, {
 			charset: "UTF-8",
 			cookie: "request"
-		})}`
-		let item = null
-		const fetchOpt = getFetchOption(txtMiru)
-		for(let i=1; i<=5; ++i){
-			try {
-				item = await fetch(req_url, fetchOpt)
+		},
+		async (fetchOpt, req_url) =>
+			fetch(req_url, fetchOpt)
 				.then(response => response.text())
 				.then(text => this.makeItem(url, text))
 				.catch(err => checkFetchAbortError(err, url))
-			} catch(e){
-				console.log(e)
-			}
-			if (item instanceof Error){
-				item = checkFetchAbortError(item, url)
-				if (item instanceof Error){
-
-				} else {
-					break
-				}
-			} else {
-				break
-			}
-			for(let j=0; j<(i+1)*3; j++){
-				console.log(`retry:${i} x [${j+1}/${(i+1)*3}]`)
-				txtMiru.txtMiruLoading.update(`待機中 ${i}回目 [${(i+1)*3-j}]`)
-				await sleep(1000)
-				if (txtMiru.fetchAbortController && txtMiru.fetchAbortController.signal.aborted){
-					return {html: `キャンセルされました<br><a href='${url}'>${url}</a>`, cancel: true}
-				}
-			}
-			txtMiru.txtMiruLoading.update(`取得中...`)
-		}
-		if (item instanceof Error){
-			return {html: `キャンセルされました<br><a href='${url}'>${url}</a>`, cancel: true}
-		}
-		return item
-	}
+		)
 	GetInfo = async (txtMiru, url, callback = null) => {
 		if (Array.isArray(url)) {
-			const results = []
-			for (const u of url) {
-				if (this.Match(u)) {
-					const item = await this.GetInfo(txtMiru, u, callback)
-					if (item !== null) {
-						results.push(item)
-					}
-				}
-			}
-			return results
+			return await this.GetArrayInfo(txtMiru, url, callback)
 		} else if (this.Match(url)) {
 			if (callback) {
 				callback([url])
 			}
-			let index_url = ""
-			let r
 			url = appendSlash(url)
-			if (r = url.match(/(https:\/\/www\.alphapolis\.co\.jp\/novel\/[0-9]+\/[0-9]+\/)/)) {
-				index_url = r[1]
-			} else {
+			const r = url.match(/(https:\/\/www\.alphapolis\.co\.jp\/novel\/[0-9]+\/[0-9]+\/)/)
+			if (!r) {
 				return null
 			}
+			const index_url = r[1]
 			const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
 				url: `${index_url}`,
 				charset: "UTF-8",
@@ -1137,13 +1054,7 @@ class Alphapolis extends TxtMiruSitePlugin {
 					name = e_name.innerText.replace(/[\n\t]/g, "")
 				}
 				for (const e_author of el_main.getElementsByClassName("author")) {
-					const remove_nodes = []
-					for (const className of ["diary-count"]) {
-						for (const e of e_author.getElementsByClassName(className)) {
-							remove_nodes.push(e)
-						}
-					}
-					removeNodes(remove_nodes)
+					removeNodes(e_author.getElementsByClassName("diary-count"))
 					author = e_author.innerText.replace(/[\n\t]/g, "")
 				}
 			}
@@ -1194,17 +1105,16 @@ TxtMiruSiteManager.AddSite(new Alphapolis())
 
 class Akatsuki extends TxtMiruSitePlugin {
 	Match = url => url.match(/https:\/\/www\.akatsuki\-novels\.com\//)
-	GetDocument = async (txtMiru, url) => {
-		const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
-			url: url,
+	GetDocument = async (txtMiru, url) =>
+		this.TryFetch(txtMiru, url, {
 			charset: "UTF-8"
-		})}`
-		const fetchOpt = getFetchOption(txtMiru)
-		return fetch(req_url, fetchOpt)
+		},
+		async (fetchOpt, req_url) => 
+			fetch(req_url, fetchOpt)
 			.then(response => response.text())
 			.then(text => {
 				const doc = TxtMiruLib.HTML2Document(text)
-				const dummy_url = dummy_url.match(/\.html$/) ? url : appendSlash(url) + "index.html"
+				const dummy_url = url.match(/\.html$/) ? url : appendSlash(url) + "index.html"
 				let remove_nodes = doc.querySelectorAll("#trace,#header,#footer,.spacer")
 				for (const e of doc.getElementsByTagName("SPAN")) {
 					if (e.innerText.match(/しおりを利用するにはログインしてください。会員登録がまだの場合はこちらから。/)) {
@@ -1248,19 +1158,10 @@ class Akatsuki extends TxtMiruSitePlugin {
 				return item
 			})
 			.catch(err => checkFetchAbortError(err, url))
-	}
+		)
 	GetInfo = async (txtMiru, url, callback = null) => {
 		if (Array.isArray(url)) {
-			const results = []
-			for (const u of url) {
-				if (this.Match(u)) {
-					const item = await this.GetInfo(txtMiru, u, callback)
-					if (item !== null) {
-						results.push(item)
-					}
-				}
-			}
-			return results
+			return await this.GetArrayInfo(txtMiru, url, callback)
 		} else if (this.Match(url)) {
 			if (callback) {
 				callback([url])
@@ -1339,21 +1240,17 @@ class Pixiv extends TxtMiruSitePlugin {
 		charset: "UTF-8"
 	})}`).then(response => response.json())
 	GetDocument = async (txtMiru, url) => {
-		let query_url = url
 		const [novel_id, series] = this._getNovelId(url)
-		if (novel_id) {
-			if (series){
-				query_url = `https://www.pixiv.net/ajax/novel/series/${novel_id}?lang=ja`
-			} else {
-				query_url = `https://www.pixiv.net/ajax/novel/${novel_id}?lang=ja`
-			}
-		}
-		const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
-			url: query_url,
+		return this.TryFetch(txtMiru, url, {
+			url: novel_id
+				? (series
+					? `https://www.pixiv.net/ajax/novel/series/${novel_id}?lang=ja`
+					: `https://www.pixiv.net/ajax/novel/${novel_id}?lang=ja`
+				) : url,
 			charset: "UTF-8"
-		})}`
-		const fetchOpt = getFetchOption(txtMiru)
-		return fetch(req_url, fetchOpt)
+		},
+		async (fetchOpt, req_url) =>
+			fetch(req_url, fetchOpt)
 			.then(response => response.text())
 			.then(async text => {
 				const item = {
@@ -1414,6 +1311,7 @@ class Pixiv extends TxtMiruSitePlugin {
 				return item
 			})
 			.catch(err => checkFetchAbortError(err, url))
+		)
 	}
 	_getNovelData = async (txtMiru, url, novel_id) => {
 		const novel_contents = await fetch(`${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
@@ -1439,16 +1337,7 @@ class Pixiv extends TxtMiruSitePlugin {
 	}
 	GetInfo = async (txtMiru, url, callback = null) => {
 		if (Array.isArray(url)) {
-			const results = []
-			for (const u of url) {
-				if (this.Match(u)) {
-					const item = await this.GetInfo(txtMiru, u, callback)
-					if (item !== null) {
-						results.push(item)
-					}
-				}
-			}
-			return results
+			return await this.GetArrayInfo(txtMiru, url, callback)
 		} else if (this.Match(url)) {
 			if (callback) {
 				callback([url])
@@ -1487,13 +1376,12 @@ TxtMiruSiteManager.AddSite(new Pixiv())
 
 class NovelupPlus extends TxtMiruSitePlugin {
 	Match = url => url.match(/https:\/\/novelup\.plus/)
-	GetDocument = async (txtMiru, url) => {
-		const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
-			url: url,
+	GetDocument = async (txtMiru, url) =>
+		this.TryFetch(txtMiru, url, {
 			charset: "UTF-8"
-		})}`
-		const fetchOpt = getFetchOption(txtMiru)
-		return fetch(req_url, fetchOpt)
+		},
+		async (fetchOpt, req_url) =>
+			fetch(req_url, fetchOpt)
 			.then(response => response.text())
 			.then(text => {
 				const doc = TxtMiruLib.HTML2Document(text)
@@ -1523,9 +1411,18 @@ class NovelupPlus extends TxtMiruSitePlugin {
 				for (const el of doc.getElementsByClassName("publishDate")) {
 					const m_date = el.innerText.match(/([0-9]+)\/([0-9]+)\/([0-9]+) ([0-9]+):([0-9]+)/)
 					if (m_date) {
-						el.innerText = `${m_date[1]}年${("0" + m_date[2]).slice(-2)}月${("0" + m_date[3]).slice(-2)}日`.replace(/[0-9]/g, s => {
-							return String.fromCharCode(s.charCodeAt(0) + 0xFEE0)
-						})
+						let year = parseInt(m_date[1])
+						const month = m_date[2]
+						const date = m_date[3]
+						if (year < 70){
+							year += 2000
+						} else if (year < 100){
+							year += 1900
+						}
+						const d = new Date(`${year}/${month}/${date}`)
+						el.innerHTML = d.getFullYear()
+							? `<span class="sideways_date">${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日</span>`
+							: ""
 					}
 				}
 				let title = ""
@@ -1550,31 +1447,20 @@ class NovelupPlus extends TxtMiruSitePlugin {
 				return item
 			})
 			.catch(err => checkFetchAbortError(err, url))
-	}
+		)
 	GetInfo = async (txtMiru, url, callback = null) => {
 		if (Array.isArray(url)) {
-			const results = []
-			for (const u of url) {
-				if (this.Match(u)) {
-					const item = await this.GetInfo(txtMiru, u, callback)
-					if (item !== null) {
-						results.push(item)
-					}
-				}
-			}
-			return results
+			return await this.GetArrayInfo(txtMiru, url, callback)
 		} else if (this.Match(url)) {
 			if (callback) {
 				callback([url])
 			}
-			let index_url = ""
 			url = appendSlash(url)
 			const m_index_url = url.match(/(https:\/\/novelup\.plus\/story\/.*?)\//)
-			if (m_index_url) {
-				index_url = m_index_url[1]
-			} else {
+			if (!m_index_url) {
 				return null
 			}
+			const index_url = m_index_url[1]
 			const req_url = `${txtMiru.setting["WebServerUrl"]}?${new URLSearchParams({
 				url: `${index_url}`,
 				charset: "UTF-8"

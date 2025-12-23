@@ -1,15 +1,11 @@
 export const TxtMiruMessageBox = {
-	show: (message, options) => {
-		options = typeof options === "undefined" ? {} : options
-		return new Promise((resolve, reject) => {
+	show: (message, options = {}) => new Promise((resolve, reject) => {
 			const buttons = typeof options["buttons"] === "undefined" ? ["OK"] : options["buttons"]
 			let button_html = ""
 			for(const button of buttons){
-				if(typeof button === "string"){
-					button_html += `<button value="${button}">${button}</button>`
-				} else {
-					button_html += `<button class="${button.className}" value="${button.value}">${button.text}</button>`
-				}
+				button_html += (typeof button === "string")
+					? `<button value="${button}">${button}</button>`
+					: `<button class="${button.className}" value="${button.value}">${button.text}</button>`
 			}
 			const messageElement = document.createElement("div")
 			messageElement.className = "show-messagebox"
@@ -37,4 +33,3 @@ export const TxtMiruMessageBox = {
 			document.body.appendChild(messageElement)
 		})
 	}
-}

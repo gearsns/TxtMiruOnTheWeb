@@ -3,7 +3,6 @@ export class TxtMiruLoading {
 		this.txtMiru = txtMiru
 		this.loadingElement = document.createElement("div")
 		this.loadingElement.className = "hide-loading"
-		this.loadingElement.innerHTML = `<div class="loader"></div>`
 		this.txtMiru.fetchAbortController = new AbortController()
 	}
 	cancel = _ => {

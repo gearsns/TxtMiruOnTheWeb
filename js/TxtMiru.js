@@ -1,12 +1,12 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.19.5'
-import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.19.5'
-import { TxtMiruLocalFile } from './TxtMiruLocalFile.js?1.0.19.5'
-import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.19.5'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.19.5'
-import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.19.5'
-import { TxtMiruDB } from './TxtMiruDB.js?1.0.19.5'
-import { TxtMiruLib } from './TxtMiruLib.js?1.0.19.5'
-import { CacheFiles } from './TxtMiruCacheFiles.js?1.0.19.5'
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.20.0'
+import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.20.0'
+import { TxtMiruLocalFile } from './TxtMiruLocalFile.js?1.0.20.0'
+import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.20.0'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.20.0'
+import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.20.0'
+import { TxtMiruDB } from './TxtMiruDB.js?1.0.20.0'
+import { TxtMiruLib } from './TxtMiruLib.js?1.0.20.0'
+import { CacheFiles } from './TxtMiruCacheFiles.js?1.0.20.0'
 
 const TxtMiruTitle = "TxtMiru on the Web"
 // DOM
@@ -138,6 +138,10 @@ export class TxtMiru {
 			"small":   "zoom_m1",
 		}
 		el.classList.add(font_size_map[this.setting["font-size"]]||"no_zoom")
+		this.setting["font-name"]
+		 ? document.documentElement.style.setProperty('--contents-font', this.setting["font-name"])
+		 : document.documentElement.style.removeProperty('--contents-font')
+		document.documentElement.style.setProperty('--font-feature-settings', this.setting["font-feature-settings"]  || '"vchw"')
 		document.body.className =  (this.setting["theme"] === "dark")  ? "dark" : ""
 		if (this.setting["menu-position"] === "bottom") {
 			document.body.classList.add("bottom_menu")

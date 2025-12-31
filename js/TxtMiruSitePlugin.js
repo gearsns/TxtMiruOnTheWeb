@@ -1,8 +1,8 @@
-import { TxtMiruLib } from './TxtMiruLib.js?1.0.19.5'
+import { TxtMiruLib } from './TxtMiruLib.js?1.0.20.0'
 import fetchJsonp from './lib/fetch-jsonp.js'
-import { narou2html } from './lib/narou.js?1.0.19.5'
-import { AozoraText2Html } from './lib/aozora.js?1.0.19.5'
-import { CacheFiles } from './TxtMiruCacheFiles.js?1.0.19.5'
+import { narou2html } from './lib/narou.js?1.0.20.0'
+import { AozoraText2Html } from './lib/aozora.js?1.0.20.0'
+import { CacheFiles } from './TxtMiruCacheFiles.js?1.0.20.0'
 
 const sleep = time => new Promise(resolve => setTimeout(resolve, time))
 const appendSlash = text => text.match(/\/$/) ? text : text + "/"

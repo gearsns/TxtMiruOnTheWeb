@@ -1,4 +1,4 @@
-import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.19.5"
+import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.20.0"
 
 const checkTypes = [
 	{
@@ -44,11 +44,13 @@ const checkTypes = [
 	}
 ]
 const textTypes = {
+	"config-font-name": "font-name",
 	"tap-scroll-next-per": "tap-scroll-next-per",
 	"config-server-url": "WebServerUrl",
 	"config-websocket-server-url": "WebSocketServerUrl",
 	"config-user-id": "UserID",
-	"delay-set-scroll-pos-state": "delay-set-scroll-pos-state"
+	"delay-set-scroll-pos-state": "delay-set-scroll-pos-state",
+	"font-feature-settings": "font-feature-settings"
 }
 const setValue = setting => {
 	const setChecked = item => {
@@ -80,7 +82,14 @@ const setEvent = (configElement, txtMiru) => {
 		configElement.className = "hide-config"
 		txtMiru.display_popup = false
 	}
-	configElement.addEventListener("click", hideConfig)
+	let pointTarget
+	configElement.addEventListener("pointerdown", e => { pointTarget = e.target })
+	configElement.addEventListener("click", _ => {
+		if (pointTarget === configElement){
+			hideConfig()
+		}
+		pointTarget = undefined
+	})
 	document.getElementById("config-close").addEventListener("click", hideConfig)
 	document.getElementById("config-reset").addEventListener("click", e => {
 		TxtMiruMessageBox.show("デフォルトの設定に戻します。", { "buttons": [{ text: "戻す", className: "seigaiha_blue", value: "reset" }, "戻さない"] }).then(async e => {
@@ -138,6 +147,9 @@ export class TxtMiruConfig {
 	<dt>フォントサイズ
 	<dd class="config-radio-area">
 	<input type="radio" name="config-font-size" id="config-font-size-large-p"><label for="config-font-size-large-p">大(+)</label><input type="radio" name="config-font-size" id="config-font-size-large"><label for="config-font-size-large">大</label><input type="radio" name="config-font-size" id="config-font-size-middle" checked><label for="config-font-size-middle">中</label><input type="radio" name="config-font-size" id="config-font-size-small"><label for="config-font-size-small">小</label>
+	<dt>フォント名
+	<dd>
+	<input id="config-font-name" value="">
 	<dt>メニューの位置
 	<dd class="config-radio-area">
 	<input type="radio" name="config-menu-position" id="config-menu-position-top" checked><label for="config-menu-position-top">上</label><input type="radio" name="config-menu-position" id="config-menu-position-bottom"><label for="config-menu-position-bottom">下</label>
@@ -168,6 +180,9 @@ export class TxtMiruConfig {
 	<dd class="config-radio-area">
 	<input type="radio" name="config-prefetch" id="config-prefetch-no"><label for="config-prefetch-no">NO</label>
 	<input type="radio" name="config-prefetch" id="config-prefetch-yes" checked><label for="config-prefetch-yes">YES</label>
+	<dt>font-feature-settings
+	<dd>
+	<input id="font-feature-settings" value="">
 </dl></div>`.replace(/[\r\n]/g, "")
 		document.body.appendChild(this.configElement)
 		setEvent(this.configElement, txtMiru)

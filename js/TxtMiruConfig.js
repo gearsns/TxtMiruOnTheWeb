@@ -1,4 +1,4 @@
-import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.20.0"
+import { TxtMiruMessageBox } from "./TxtMiruMessageBox.js?1.0.20.1"
 
 const checkTypes = [
 	{

@@ -1,12 +1,12 @@
-import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.20.0'
-import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.20.0'
-import { TxtMiruLocalFile } from './TxtMiruLocalFile.js?1.0.20.0'
-import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.20.0'
-import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.20.0'
-import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.20.0'
-import { TxtMiruDB } from './TxtMiruDB.js?1.0.20.0'
-import { TxtMiruLib } from './TxtMiruLib.js?1.0.20.0'
-import { CacheFiles } from './TxtMiruCacheFiles.js?1.0.20.0'
+import { TxtMiruSiteManager } from './TxtMiruSitePlugin.js?1.0.20.1'
+import { TxtMiruFavorite } from './TxtMiruFavorite.js?1.0.20.1'
+import { TxtMiruLocalFile } from './TxtMiruLocalFile.js?1.0.20.1'
+import { TxtMiruInputURL } from './TxtMiruInputURL.js?1.0.20.1'
+import { TxtMiruLoading } from './TxtMiruLoading.js?1.0.20.1'
+import { TxtMiruConfig } from './TxtMiruConfig.js?1.0.20.1'
+import { TxtMiruDB } from './TxtMiruDB.js?1.0.20.1'
+import { TxtMiruLib } from './TxtMiruLib.js?1.0.20.1'
+import { CacheFiles } from './TxtMiruCacheFiles.js?1.0.20.1'
 
 const TxtMiruTitle = "TxtMiru on the Web"
 // DOM
@@ -414,7 +414,7 @@ export class TxtMiru {
 		this.mainElement.addEventListener("click", e => { 
 			const r = this.setting["tap-scroll-next-per"] || 0
 			if (r && e.clientX < this.mainElement.clientWidth * (r / 100)){
-				if (e.target && e.target.tagName === "A") {
+				if (e.target?.tagName === "A" || e.target?.classList?.contains("next-episode")) {
 					return
 				}
 				TxtMiruLib.PreventEverything(e)
@@ -476,6 +476,7 @@ export class TxtMiru {
 	}
 	//
 	setTxtMiruIndexSite = _ => {
+		document.getElementById("txtmiru_current_page_url").style.display = "none"
 		this.contentsElement.innerHTML = document.getElementById("TxtMiruTopContents").innerHTML
 		this.contentsElement.className = "contents"
 		for (const el of this.mainElement.querySelectorAll(".prev-episode, .next-episode")) {
@@ -603,6 +604,8 @@ export class TxtMiru {
 			this.mainElement.focus()
 			this.txtMiruLoading.end()
 			this.loading = false
+			document.getElementById("txtmiru_current_page_url").textContent = document.title;
+			document.getElementById("txtmiru_current_page_url").href = url;
 			this.SetCacheIcon()
 		}
 		this.loading = true
@@ -612,6 +615,7 @@ export class TxtMiru {
 		if (!no_history) {
 			this.setHistory(old_url.searchParams.get("url"), title)
 		}
+		document.getElementById("txtmiru_current_page_url").style.display = "inline"
 		document.getElementById("btn_index").disabled = true
 		document.getElementById("btn_next_episode").disabled = true
 		document.getElementById("btn_prev_episode").disabled = true
